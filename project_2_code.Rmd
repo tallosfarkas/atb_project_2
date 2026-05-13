@@ -119,7 +119,7 @@ $$
 where $N_{ij}$ is the observed number of migrations from rating $i$ to rating
 $j$ during the window $[0, T]$, and $Y_i(s)$ is the number of obligors in
 state $i$ at time $s$, so the denominator is the total obligor-time spent in
-the from-state (slide p.126 of `01_Slides_QFin_AT in Banking_V1_Handout.pdf`).
+the from-state (slide p.126 of `docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf`).
 The one-year migration matrix is then obtained by exponentiating the
 generator,
 
@@ -387,7 +387,7 @@ they were external ratings.
 Under the Standardized Approach the risk weight applied to a corporate
 exposure is a step function of the external credit assessment (CRR
 Article 122; slide p.208 of
-`01_Slides_QFin_AT in Banking_V1_Handout.pdf`). Following the case-study
+`docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf`). Following the case-study
 instruction, we treat the internal ratings as if they were ECAI ratings.
 The mapping from the eight-bucket rating universe to risk weights, with
 defaulted exposures attracting the 150% weight applicable when specific
@@ -529,7 +529,7 @@ maturity to 2.5 years.
 
 ```{r task3-impl, eval=FALSE}
 # IRB corporate formula --- slide p.218 of
-# 01_Slides_QFin_AT in Banking_V1_Handout.pdf, CRR Art. 153.
+# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf, CRR Art. 153.
 #
 # Inputs from the case study brief:
 #   PD     <- floored PD vector from Task 1 (object `PD`, minimum 5 bp)
@@ -585,7 +585,7 @@ expected loss.
 
 ```{r task4-impl, eval=FALSE}
 # 2-factor Merton with one common market factor --- slide p.223 of
-# 01_Slides_QFin_AT in Banking_V1_Handout.pdf.
+# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf.
 #
 # Inputs from the case study brief:
 #   PD       <- floored PD vector from Task 1 (object `PD`)
@@ -638,7 +638,7 @@ the unexpected loss as the 99.9% VaR minus the expected loss.
 
 ```{r task5-impl, eval=FALSE}
 # 2-factor Merton with three industry factors --- slide p.224 of
-# 01_Slides_QFin_AT in Banking_V1_Handout.pdf, case-study Task 5.
+# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf, case-study Task 5.
 #
 # Inputs from the case study brief:
 #   PD       <- floored PD vector from Task 1 (object `PD`)
