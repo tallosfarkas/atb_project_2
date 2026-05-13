@@ -1,0 +1,559 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+  11pt,
+]{article}
+\usepackage{xcolor}
+\usepackage[left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{float}
+\floatplacement{figure}{H}
+\floatplacement{table}{H}
+\usepackage{xcolor}
+\definecolor{bawagblue}{HTML}{005493}
+\definecolor{darkgreen}{HTML}{006400}
+\definecolor{darkorange}{HTML}{FF8C00}
+\definecolor{darkred}{HTML}{8B0000}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small BAWAG Group AG --- Risk Analysis 2025}
+\fancyhead[R]{\small Group 4 | WU Wien 2026}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\usepackage{caption}
+\captionsetup[table]{skip=4pt}
+\AtBeginDocument{\hypersetup{colorlinks=true, linkcolor=bawagblue, urlcolor=bawagblue, citecolor=bawagblue}}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
+\usepackage{adjustbox}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{colortbl}
+\usepackage{pdflscape}
+\usepackage{tabu}
+\usepackage[normalem]{ulem}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdfauthor={Caterina Piacentini · Farkas Tallos · Balazs Limpek},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Credit Risk Measurement\\
+Advanced Topics in Banking - Project 2\\
+Group 4 \textbar{} WU Wien, SS 2026}
+\author{Caterina Piacentini · Farkas Tallos · Balazs Limpek}
+\date{2026-05-24}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{knitr}\SpecialCharTok{::}\NormalTok{opts\_chunk}\SpecialCharTok{$}\FunctionTok{set}\NormalTok{(}
+    \AttributeTok{echo =} \ConstantTok{TRUE}\NormalTok{, }
+    \AttributeTok{warning =} \ConstantTok{FALSE}\NormalTok{,}
+    \AttributeTok{message =} \ConstantTok{FALSE}\NormalTok{,}
+    \AttributeTok{fig.width =} \DecValTok{7}\NormalTok{,}
+    \AttributeTok{fig.height =} \DecValTok{5}\NormalTok{,}
+    \AttributeTok{fig.pos =} \StringTok{"H"}\NormalTok{,}
+    \AttributeTok{out.width =} \StringTok{"100\%"}
+\NormalTok{)}
+
+\ControlFlowTok{if}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{require}\NormalTok{(}\StringTok{"pacman"}\NormalTok{)) }\FunctionTok{install.packages}\NormalTok{(}\StringTok{"pacman"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Loading required package: pacman
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pacman}\SpecialCharTok{::}\FunctionTok{p\_load}\NormalTok{(}
+\NormalTok{    data.table,}
+\NormalTok{    tidyverse,}
+\NormalTok{    knitr,}
+\NormalTok{    kableExtra,}
+\NormalTok{    ggplot2,}
+\NormalTok{    openxlsx,}
+\NormalTok{    dplyr}
+\NormalTok{)}
+
+\NormalTok{BASE }\OtherTok{\textless{}{-}} \StringTok{"/Users/farkastallos/Library/CloudStorage/OneDrive{-}WUWien/00\_WU/01\_2\_YEAR/03\_Q3/02\_ATB/atb\_project\_2/"}
+
+
+\NormalTok{ratings }\OtherTok{\textless{}{-}} \FunctionTok{read.xlsx}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(BASE, }\StringTok{"Data\_Group\_4.xlsx"}\NormalTok{), }\AttributeTok{sheet =} \StringTok{"Ratings"}\NormalTok{)}
+\NormalTok{portfolio }\OtherTok{\textless{}{-}} \FunctionTok{read.xlsx}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(BASE, }\StringTok{"Data\_Group\_4.xlsx"}\NormalTok{), }\AttributeTok{sheet =} \StringTok{"Portfolio"}\NormalTok{)}
+
+
+\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), setDT)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [[1]]
+##        Obligor 2024.12.31 2025.01.31 2025.02.28 2025.03.31 2025.04.30
+##          <num>     <char>     <char>     <char>     <char>     <char>
+##     1:       1      CCC/C      CCC/C      CCC/C          B          B
+##     2:       2        BBB        BBB        BBB        BBB        BBB
+##     3:       3         BB         BB         BB         BB         BB
+##     4:       4          B          B          B          B          B
+##     5:       5        AAA        AAA        AAA        AAA        AAA
+##    ---                                                               
+##  9996:    9996         BB         BB          A          A          A
+##  9997:    9997         BB         BB         BB         BB         BB
+##  9998:    9998      CCC/C      CCC/C      CCC/C      CCC/C      CCC/C
+##  9999:    9999         BB         BB         BB         BB         BB
+## 10000:   10000         AA         AA         AA         AA         AA
+##        2025.05.31 2025.06.30 2025.07.31 2025.08.31 2025.09.30 2025.10.31
+##            <char>     <char>     <char>     <char>     <char>     <char>
+##     1:          B          B          B          B          B          B
+##     2:        BBB        BBB        BBB        BBB        BBB        BBB
+##     3:         BB         BB         BB         BB         BB         BB
+##     4:          B          B          B          B          B          B
+##     5:        AAA        AAA        AAA        AAA        AAA        AAA
+##    ---                                                                  
+##  9996:          A          A          A          A          A          A
+##  9997:         BB         BB         BB         BB         BB         BB
+##  9998:      CCC/C      CCC/C      CCC/C      CCC/C      CCC/C      CCC/C
+##  9999:         BB         BB         BB         BB         BB         BB
+## 10000:         AA         AA         AA         AA         AA         AA
+##        2025.11.30 2025.12.31
+##            <char>     <char>
+##     1:          B          B
+##     2:        BBB        BBB
+##     3:         BB         BB
+##     4:          B          B
+##     5:        AAA        AAA
+##    ---                      
+##  9996:          A          A
+##  9997:         BB         BB
+##  9998:      CCC/C      CCC/C
+##  9999:         BB         BB
+## 10000:         AA         AA
+## 
+## [[2]]
+##      Obligor Rating Industry Loan.Volume
+##        <num> <char>    <num>       <num>
+##   1:       1    BBB        1      169000
+##   2:       2     BB        3      149000
+##   3:       3     BB        2      850000
+##   4:       4     BB        2       76000
+##   5:       5  CCC/C        1      174000
+##   6:       6    BBB        1      108000
+##   7:       7      A        1      122000
+##   8:       8      A        3       33000
+##   9:       9     BB        3       22000
+##  10:      10    BBB        3       38000
+##  11:      11    AAA        1      142000
+##  12:      12     BB        2      113000
+##  13:      13      A        3      850000
+##  14:      14      B        3       33000
+##  15:      15     BB        2      166000
+##  16:      16     BB        1       84000
+##  17:      17    BBB        1      143000
+##  18:      18      A        1      191000
+##  19:      19      B        2       96000
+##  20:      20     BB        3       90000
+##  21:      21     BB        3      850000
+##  22:      22    BBB        1      850000
+##  23:      23      A        1      850000
+##  24:      24      A        1      198000
+##  25:      25     BB        3      162000
+##  26:      26     BB        2       21000
+##  27:      27  CCC/C        1      850000
+##  28:      28    BBB        2      108000
+##  29:      29    BBB        2       49000
+##  30:      30     BB        3       50000
+##  31:      31    BBB        1       48000
+##  32:      32      A        1       33000
+##  33:      33     BB        1      137000
+##  34:      34    AAA        1       72000
+##  35:      35     AA        3      103000
+##  36:      36     AA        2       91000
+##  37:      37    BBB        1      182000
+##  38:      38      A        2       88000
+##  39:      39    BBB        2       44000
+##  40:      40      B        3       37000
+##  41:      41     BB        3       52000
+##  42:      42     BB        3       79000
+##  43:      43      A        2       46000
+##  44:      44     BB        3      144000
+##  45:      45      A        3       94000
+##  46:      46      A        1      143000
+##  47:      47     AA        1      850000
+##  48:      48  CCC/C        1       21000
+##  49:      49    BBB        2      168000
+##  50:      50    BBB        1      148000
+##  51:      51    BBB        2      193000
+##  52:      52    BBB        3      193000
+##  53:      53      A        2      119000
+##  54:      54    BBB        1       85000
+##  55:      55    BBB        1      139000
+##  56:      56    BBB        3      178000
+##  57:      57     AA        2       21000
+##  58:      58     BB        2      172000
+##  59:      59     AA        1       31000
+##  60:      60  CCC/C        1       52000
+##  61:      61      A        2      125000
+##  62:      62    BBB        1       34000
+##  63:      63     AA        1       59000
+##  64:      64     BB        2       44000
+##  65:      65    AAA        1       65000
+##  66:      66    BBB        2       91000
+##  67:      67    BBB        1      850000
+##  68:      68    BBB        1       56000
+##  69:      69      B        2       49000
+##  70:      70      A        1       57000
+##  71:      71    BBB        3       97000
+##  72:      72     BB        2       64000
+##  73:      73    BBB        1       74000
+##  74:      74     BB        3      149000
+##  75:      75     BB        2       24000
+##  76:      76      B        2      121000
+##  77:      77      A        1      198000
+##  78:      78      A        3      190000
+##  79:      79      A        3       93000
+##  80:      80    BBB        3      110000
+##  81:      81      B        2      137000
+##  82:      82     BB        2      151000
+##  83:      83  CCC/C        1      111000
+##  84:      84    BBB        3       94000
+##  85:      85     BB        3      200000
+##  86:      86  CCC/C        1      113000
+##  87:      87     BB        1      135000
+##  88:      88     AA        1       60000
+##  89:      89    BBB        2      103000
+##  90:      90      B        1       67000
+##  91:      91    BBB        3      166000
+##  92:      92     AA        2      195000
+##  93:      93      B        1      184000
+##  94:      94     BB        1      186000
+##  95:      95    BBB        1      139000
+##  96:      96      B        3      163000
+##  97:      97    BBB        1       21000
+##  98:      98     BB        3      138000
+##  99:      99     BB        3      120000
+## 100:     100    BBB        2      143000
+##      Obligor Rating Industry Loan.Volume
+##        <num> <char>    <num>       <num>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), str)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Classes 'data.table' and 'data.frame':   10000 obs. of  14 variables:
+##  $ Obligor   : num  1 2 3 4 5 6 7 8 9 10 ...
+##  $ 2024.12.31: chr  "CCC/C" "BBB" "BB" "B" ...
+##  $ 2025.01.31: chr  "CCC/C" "BBB" "BB" "B" ...
+##  $ 2025.02.28: chr  "CCC/C" "BBB" "BB" "B" ...
+##  $ 2025.03.31: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.04.30: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.05.31: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.06.30: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.07.31: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.08.31: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.09.30: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.10.31: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.11.30: chr  "B" "BBB" "BB" "B" ...
+##  $ 2025.12.31: chr  "B" "BBB" "BB" "B" ...
+## Classes 'data.table' and 'data.frame':   100 obs. of  4 variables:
+##  $ Obligor    : num  1 2 3 4 5 6 7 8 9 10 ...
+##  $ Rating     : chr  "BBB" "BB" "BB" "BB" ...
+##  $ Industry   : num  1 3 2 2 1 1 1 3 3 3 ...
+##  $ Loan.Volume: num  169000 149000 850000 76000 174000 108000 122000 33000 22000 38000 ...
+\end{verbatim}
+
+\begin{verbatim}
+## [[1]]
+## NULL
+## 
+## [[2]]
+## NULL
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), head)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [[1]]
+##    Obligor 2024.12.31 2025.01.31 2025.02.28 2025.03.31 2025.04.30 2025.05.31
+##      <num>     <char>     <char>     <char>     <char>     <char>     <char>
+## 1:       1      CCC/C      CCC/C      CCC/C          B          B          B
+## 2:       2        BBB        BBB        BBB        BBB        BBB        BBB
+## 3:       3         BB         BB         BB         BB         BB         BB
+## 4:       4          B          B          B          B          B          B
+## 5:       5        AAA        AAA        AAA        AAA        AAA        AAA
+## 6:       6        BBB        BBB        BBB        BBB        BBB        BBB
+##    2025.06.30 2025.07.31 2025.08.31 2025.09.30 2025.10.31 2025.11.30 2025.12.31
+##        <char>     <char>     <char>     <char>     <char>     <char>     <char>
+## 1:          B          B          B          B          B          B          B
+## 2:        BBB        BBB        BBB        BBB        BBB        BBB        BBB
+## 3:         BB         BB         BB         BB         BB         BB         BB
+## 4:          B          B          B          B          B          B          B
+## 5:        AAA        AAA        AAA        AAA        AAA        AAA        AAA
+## 6:        BBB        BBB        BBB        BBB        BBB        BBB        BBB
+## 
+## [[2]]
+##    Obligor Rating Industry Loan.Volume
+##      <num> <char>    <num>       <num>
+## 1:       1    BBB        1      169000
+## 2:       2     BB        3      149000
+## 3:       3     BB        2      850000
+## 4:       4     BB        2       76000
+## 5:       5  CCC/C        1      174000
+## 6:       6    BBB        1      108000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), summary)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [[1]]
+##     Obligor          2024.12.31        2025.01.31        2025.02.28   
+##  Min.   :    1   Length   :10000   Length   :10000   Length   :10000  
+##  1st Qu.: 2501   N.unique :    7   N.unique :    8   N.unique :    8  
+##  Median : 5000   N.blank  :    0   N.blank  :    0   N.blank  :    0  
+##  Mean   : 5000   Min.nchar:    1   Min.nchar:    1   Min.nchar:    1  
+##  3rd Qu.: 7500   Max.nchar:    5   Max.nchar:    5   Max.nchar:    5  
+##  Max.   :10000                                                        
+##      2025.03.31        2025.04.30        2025.05.31        2025.06.30   
+##  Length   :10000   Length   :10000   Length   :10000   Length   :10000  
+##  N.unique :    8   N.unique :    8   N.unique :    8   N.unique :    8  
+##  N.blank  :    0   N.blank  :    0   N.blank  :    0   N.blank  :    0  
+##  Min.nchar:    1   Min.nchar:    1   Min.nchar:    1   Min.nchar:    1  
+##  Max.nchar:    5   Max.nchar:    5   Max.nchar:    5   Max.nchar:    5  
+##                                                                         
+##      2025.07.31        2025.08.31        2025.09.30        2025.10.31   
+##  Length   :10000   Length   :10000   Length   :10000   Length   :10000  
+##  N.unique :    8   N.unique :    8   N.unique :    8   N.unique :    8  
+##  N.blank  :    0   N.blank  :    0   N.blank  :    0   N.blank  :    0  
+##  Min.nchar:    1   Min.nchar:    1   Min.nchar:    1   Min.nchar:    1  
+##  Max.nchar:    5   Max.nchar:    5   Max.nchar:    5   Max.nchar:    5  
+##                                                                         
+##      2025.11.30        2025.12.31   
+##  Length   :10000   Length   :10000  
+##  N.unique :    8   N.unique :    8  
+##  N.blank  :    0   N.blank  :    0  
+##  Min.nchar:    1   Min.nchar:    1  
+##  Max.nchar:    5   Max.nchar:    5  
+##                                     
+## 
+## [[2]]
+##     Obligor             Rating       Industry     Loan.Volume    
+##  Min.   :  1.00   Length   :100   Min.   :1.00   Min.   : 21000  
+##  1st Qu.: 25.75   N.unique :  7   1st Qu.:1.00   1st Qu.: 59750  
+##  Median : 50.50   N.blank  :  0   Median :2.00   Median :112000  
+##  Mean   : 50.50   Min.nchar:  1   Mean   :1.87   Mean   :165760  
+##  3rd Qu.: 75.25   Max.nchar:  5   3rd Qu.:3.00   3rd Qu.:166000  
+##  Max.   :100.00                   Max.   :3.00   Max.   :850000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{nrow}\NormalTok{(ratings)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 10000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{nrow}\NormalTok{(portfolio)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 100
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "Obligor"    "2024.12.31" "2025.01.31" "2025.02.28" "2025.03.31"
+##  [6] "2025.04.30" "2025.05.31" "2025.06.30" "2025.07.31" "2025.08.31"
+## [11] "2025.09.30" "2025.10.31" "2025.11.30" "2025.12.31"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(portfolio))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "Obligor"     "Rating"      "Industry"    "Loan.Volume"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Correctly parse the dots and format to dashes}
+\FunctionTok{colnames}\NormalTok{(ratings)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}} \FunctionTok{format}\NormalTok{(}\FunctionTok{as.Date}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{], }\AttributeTok{format =} \StringTok{"\%Y.\%m.\%d"}\NormalTok{), }\StringTok{"\%Y{-}\%m{-}\%d"}\NormalTok{)}
+\FunctionTok{print}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "Obligor"    "2024-12-31" "2025-01-31" "2025-02-28" "2025-03-31"
+##  [6] "2025-04-30" "2025-05-31" "2025-06-30" "2025-07-31" "2025-08-31"
+## [11] "2025-09-30" "2025-10-31" "2025-11-30" "2025-12-31"
+\end{verbatim}
+
+\section{\texorpdfstring{\textbf{Task}}{Task}}\label{task}
+
+\subsection{}\label{section}
+
+Based on the rating history of 10,000 representative borrowers,
+determine the one-year migration matrix based on the Lando and Skodeberg
+procedure. In doing so, determine the migration matrix using the
+generator matrix based on at least the first five terms.
+
+Estimation of the generator matrix come from this formula:
+\[\lambda_{ij} = \frac{N_{ij}}{\int Y_{j}(s)ds} i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}\]
+
+where \(N_{ij}\) is the number of observed migrations from rating \(i\)
+to rating \(j\) and \(Y_{j}(s)\) is the number of borrowers in rating
+\(j\) at time \(s\). And the integral: \(\int Y_{j}(s)ds\) is the total
+time spent by all borrowers in rating \(j\) during the observation
+period. The one-year migration matrix can then be obtained by
+exponentiating the generator matrix:
+\(W(\Delta t) = e^{\Lambda \cdot \Delta t} = \sum_{k=0}^{\infty} \frac{(\Lambda \cdot \Delta t)^k}{k!}\)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{generator\_matrix }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\DecValTok{0}\NormalTok{, }\AttributeTok{nrow =} \FunctionTok{nrow}\NormalTok{(ratings) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{, }\AttributeTok{ncol =} \FunctionTok{nrow}\NormalTok{(ratings) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\section{\texorpdfstring{\textbf{Task}}{Task}}\label{task-1}
+
+\subsection{}\label{section-1}
+
+Determine the credit risk for the portfolio of 100 borrowers based on
+the Basel Standardized Approach. Proceed by using the existing ratings
+as if they were external ratings.
+
+\end{document}
