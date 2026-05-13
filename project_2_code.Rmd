@@ -63,7 +63,7 @@ pacman::p_load(
     dplyr
 )
 
-BASE <- "/Users/farkastallos/Library/CloudStorage/OneDrive-WUWien/00_WU/01_2_YEAR/03_Q3/02_ATB/atb_project_2/"
+BASE <- "data/"
 
 
 ratings <- read.xlsx(paste0(BASE, "Data_Group_4.xlsx"), sheet = "Ratings")
