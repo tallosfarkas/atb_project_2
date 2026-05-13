@@ -78,17 +78,6 @@
 \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
 \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
 \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
-\usepackage{longtable,booktabs,array}
-\newcounter{none} % for unnumbered tables
-\usepackage{calc} % for calculating minipage widths
-% Correct order of tables after \paragraph or \subparagraph
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
-\makeatother
-% Allow footnotes in longtable head/foot
-\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
-\makesavenoteenv{longtable}
 \usepackage{graphicx}
 \makeatletter
 \newsavebox\pandoc@box
@@ -165,1124 +154,583 @@ Group 4 \textbar{} WU Wien, SS 2026}
 \setcounter{tocdepth}{3}
 \tableofcontents
 }
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{knitr}\SpecialCharTok{::}\NormalTok{opts\_chunk}\SpecialCharTok{$}\FunctionTok{set}\NormalTok{(}
-    \AttributeTok{echo =} \ConstantTok{TRUE}\NormalTok{, }
-    \AttributeTok{warning =} \ConstantTok{FALSE}\NormalTok{,}
-    \AttributeTok{message =} \ConstantTok{FALSE}\NormalTok{,}
-    \AttributeTok{fig.width =} \DecValTok{7}\NormalTok{,}
-    \AttributeTok{fig.height =} \DecValTok{5}\NormalTok{,}
-    \AttributeTok{fig.pos =} \StringTok{"H"}\NormalTok{,}
-    \AttributeTok{out.width =} \StringTok{"100\%"}
-\NormalTok{)}
+\section{Task 1 --- One-Year Migration Matrix
+(Lando--Skodeberg)}\label{task-1-one-year-migration-matrix-landoskodeberg}
 
-\ControlFlowTok{if}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{require}\NormalTok{(}\StringTok{"pacman"}\NormalTok{)) }\FunctionTok{install.packages}\NormalTok{(}\StringTok{"pacman"}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
+\emph{Author: Farkas Tallos}
 
-\begin{verbatim}
-## Loading required package: pacman
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{pacman}\SpecialCharTok{::}\FunctionTok{p\_load}\NormalTok{(}
-\NormalTok{    data.table,}
-\NormalTok{    tidyverse,}
-\NormalTok{    knitr,}
-\NormalTok{    kableExtra,}
-\NormalTok{    ggplot2,}
-\NormalTok{    openxlsx,}
-\NormalTok{    dplyr}
-\NormalTok{)}
-
-\NormalTok{BASE }\OtherTok{\textless{}{-}} \StringTok{"data/"}
-
-
-\NormalTok{ratings }\OtherTok{\textless{}{-}} \FunctionTok{read.xlsx}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(BASE, }\StringTok{"Data\_Group\_4.xlsx"}\NormalTok{), }\AttributeTok{sheet =} \StringTok{"Ratings"}\NormalTok{)}
-\NormalTok{portfolio }\OtherTok{\textless{}{-}} \FunctionTok{read.xlsx}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(BASE, }\StringTok{"Data\_Group\_4.xlsx"}\NormalTok{), }\AttributeTok{sheet =} \StringTok{"Portfolio"}\NormalTok{)}
-
-
-\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), setDT)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [[1]]
-##        Obligor 2024.12.31 2025.01.31 2025.02.28 2025.03.31 2025.04.30
-##          <num>     <char>     <char>     <char>     <char>     <char>
-##     1:       1      CCC/C      CCC/C      CCC/C          B          B
-##     2:       2        BBB        BBB        BBB        BBB        BBB
-##     3:       3         BB         BB         BB         BB         BB
-##     4:       4          B          B          B          B          B
-##     5:       5        AAA        AAA        AAA        AAA        AAA
-##    ---                                                               
-##  9996:    9996         BB         BB          A          A          A
-##  9997:    9997         BB         BB         BB         BB         BB
-##  9998:    9998      CCC/C      CCC/C      CCC/C      CCC/C      CCC/C
-##  9999:    9999         BB         BB         BB         BB         BB
-## 10000:   10000         AA         AA         AA         AA         AA
-##        2025.05.31 2025.06.30 2025.07.31 2025.08.31 2025.09.30 2025.10.31
-##            <char>     <char>     <char>     <char>     <char>     <char>
-##     1:          B          B          B          B          B          B
-##     2:        BBB        BBB        BBB        BBB        BBB        BBB
-##     3:         BB         BB         BB         BB         BB         BB
-##     4:          B          B          B          B          B          B
-##     5:        AAA        AAA        AAA        AAA        AAA        AAA
-##    ---                                                                  
-##  9996:          A          A          A          A          A          A
-##  9997:         BB         BB         BB         BB         BB         BB
-##  9998:      CCC/C      CCC/C      CCC/C      CCC/C      CCC/C      CCC/C
-##  9999:         BB         BB         BB         BB         BB         BB
-## 10000:         AA         AA         AA         AA         AA         AA
-##        2025.11.30 2025.12.31
-##            <char>     <char>
-##     1:          B          B
-##     2:        BBB        BBB
-##     3:         BB         BB
-##     4:          B          B
-##     5:        AAA        AAA
-##    ---                      
-##  9996:          A          A
-##  9997:         BB         BB
-##  9998:      CCC/C      CCC/C
-##  9999:         BB         BB
-## 10000:         AA         AA
-## 
-## [[2]]
-##      Obligor Rating Industry Loan.Volume
-##        <num> <char>    <num>       <num>
-##   1:       1    BBB        1      169000
-##   2:       2     BB        3      149000
-##   3:       3     BB        2      850000
-##   4:       4     BB        2       76000
-##   5:       5  CCC/C        1      174000
-##   6:       6    BBB        1      108000
-##   7:       7      A        1      122000
-##   8:       8      A        3       33000
-##   9:       9     BB        3       22000
-##  10:      10    BBB        3       38000
-##  11:      11    AAA        1      142000
-##  12:      12     BB        2      113000
-##  13:      13      A        3      850000
-##  14:      14      B        3       33000
-##  15:      15     BB        2      166000
-##  16:      16     BB        1       84000
-##  17:      17    BBB        1      143000
-##  18:      18      A        1      191000
-##  19:      19      B        2       96000
-##  20:      20     BB        3       90000
-##  21:      21     BB        3      850000
-##  22:      22    BBB        1      850000
-##  23:      23      A        1      850000
-##  24:      24      A        1      198000
-##  25:      25     BB        3      162000
-##  26:      26     BB        2       21000
-##  27:      27  CCC/C        1      850000
-##  28:      28    BBB        2      108000
-##  29:      29    BBB        2       49000
-##  30:      30     BB        3       50000
-##  31:      31    BBB        1       48000
-##  32:      32      A        1       33000
-##  33:      33     BB        1      137000
-##  34:      34    AAA        1       72000
-##  35:      35     AA        3      103000
-##  36:      36     AA        2       91000
-##  37:      37    BBB        1      182000
-##  38:      38      A        2       88000
-##  39:      39    BBB        2       44000
-##  40:      40      B        3       37000
-##  41:      41     BB        3       52000
-##  42:      42     BB        3       79000
-##  43:      43      A        2       46000
-##  44:      44     BB        3      144000
-##  45:      45      A        3       94000
-##  46:      46      A        1      143000
-##  47:      47     AA        1      850000
-##  48:      48  CCC/C        1       21000
-##  49:      49    BBB        2      168000
-##  50:      50    BBB        1      148000
-##  51:      51    BBB        2      193000
-##  52:      52    BBB        3      193000
-##  53:      53      A        2      119000
-##  54:      54    BBB        1       85000
-##  55:      55    BBB        1      139000
-##  56:      56    BBB        3      178000
-##  57:      57     AA        2       21000
-##  58:      58     BB        2      172000
-##  59:      59     AA        1       31000
-##  60:      60  CCC/C        1       52000
-##  61:      61      A        2      125000
-##  62:      62    BBB        1       34000
-##  63:      63     AA        1       59000
-##  64:      64     BB        2       44000
-##  65:      65    AAA        1       65000
-##  66:      66    BBB        2       91000
-##  67:      67    BBB        1      850000
-##  68:      68    BBB        1       56000
-##  69:      69      B        2       49000
-##  70:      70      A        1       57000
-##  71:      71    BBB        3       97000
-##  72:      72     BB        2       64000
-##  73:      73    BBB        1       74000
-##  74:      74     BB        3      149000
-##  75:      75     BB        2       24000
-##  76:      76      B        2      121000
-##  77:      77      A        1      198000
-##  78:      78      A        3      190000
-##  79:      79      A        3       93000
-##  80:      80    BBB        3      110000
-##  81:      81      B        2      137000
-##  82:      82     BB        2      151000
-##  83:      83  CCC/C        1      111000
-##  84:      84    BBB        3       94000
-##  85:      85     BB        3      200000
-##  86:      86  CCC/C        1      113000
-##  87:      87     BB        1      135000
-##  88:      88     AA        1       60000
-##  89:      89    BBB        2      103000
-##  90:      90      B        1       67000
-##  91:      91    BBB        3      166000
-##  92:      92     AA        2      195000
-##  93:      93      B        1      184000
-##  94:      94     BB        1      186000
-##  95:      95    BBB        1      139000
-##  96:      96      B        3      163000
-##  97:      97    BBB        1       21000
-##  98:      98     BB        3      138000
-##  99:      99     BB        3      120000
-## 100:     100    BBB        2      143000
-##      Obligor Rating Industry Loan.Volume
-##        <num> <char>    <num>       <num>
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), str)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## Classes 'data.table' and 'data.frame':   10000 obs. of  14 variables:
-##  $ Obligor   : num  1 2 3 4 5 6 7 8 9 10 ...
-##  $ 2024.12.31: chr  "CCC/C" "BBB" "BB" "B" ...
-##  $ 2025.01.31: chr  "CCC/C" "BBB" "BB" "B" ...
-##  $ 2025.02.28: chr  "CCC/C" "BBB" "BB" "B" ...
-##  $ 2025.03.31: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.04.30: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.05.31: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.06.30: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.07.31: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.08.31: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.09.30: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.10.31: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.11.30: chr  "B" "BBB" "BB" "B" ...
-##  $ 2025.12.31: chr  "B" "BBB" "BB" "B" ...
-## Classes 'data.table' and 'data.frame':   100 obs. of  4 variables:
-##  $ Obligor    : num  1 2 3 4 5 6 7 8 9 10 ...
-##  $ Rating     : chr  "BBB" "BB" "BB" "BB" ...
-##  $ Industry   : num  1 3 2 2 1 1 1 3 3 3 ...
-##  $ Loan.Volume: num  169000 149000 850000 76000 174000 108000 122000 33000 22000 38000 ...
-\end{verbatim}
-
-\begin{verbatim}
-## [[1]]
-## NULL
-## 
-## [[2]]
-## NULL
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), head)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [[1]]
-##    Obligor 2024.12.31 2025.01.31 2025.02.28 2025.03.31 2025.04.30 2025.05.31
-##      <num>     <char>     <char>     <char>     <char>     <char>     <char>
-## 1:       1      CCC/C      CCC/C      CCC/C          B          B          B
-## 2:       2        BBB        BBB        BBB        BBB        BBB        BBB
-## 3:       3         BB         BB         BB         BB         BB         BB
-## 4:       4          B          B          B          B          B          B
-## 5:       5        AAA        AAA        AAA        AAA        AAA        AAA
-## 6:       6        BBB        BBB        BBB        BBB        BBB        BBB
-##    2025.06.30 2025.07.31 2025.08.31 2025.09.30 2025.10.31 2025.11.30 2025.12.31
-##        <char>     <char>     <char>     <char>     <char>     <char>     <char>
-## 1:          B          B          B          B          B          B          B
-## 2:        BBB        BBB        BBB        BBB        BBB        BBB        BBB
-## 3:         BB         BB         BB         BB         BB         BB         BB
-## 4:          B          B          B          B          B          B          B
-## 5:        AAA        AAA        AAA        AAA        AAA        AAA        AAA
-## 6:        BBB        BBB        BBB        BBB        BBB        BBB        BBB
-## 
-## [[2]]
-##    Obligor Rating Industry Loan.Volume
-##      <num> <char>    <num>       <num>
-## 1:       1    BBB        1      169000
-## 2:       2     BB        3      149000
-## 3:       3     BB        2      850000
-## 4:       4     BB        2       76000
-## 5:       5  CCC/C        1      174000
-## 6:       6    BBB        1      108000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{lapply}\NormalTok{(}\FunctionTok{list}\NormalTok{(ratings, portfolio), summary)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [[1]]
-##     Obligor          2024.12.31        2025.01.31        2025.02.28   
-##  Min.   :    1   Length   :10000   Length   :10000   Length   :10000  
-##  1st Qu.: 2501   N.unique :    7   N.unique :    8   N.unique :    8  
-##  Median : 5000   N.blank  :    0   N.blank  :    0   N.blank  :    0  
-##  Mean   : 5000   Min.nchar:    1   Min.nchar:    1   Min.nchar:    1  
-##  3rd Qu.: 7500   Max.nchar:    5   Max.nchar:    5   Max.nchar:    5  
-##  Max.   :10000                                                        
-##      2025.03.31        2025.04.30        2025.05.31        2025.06.30   
-##  Length   :10000   Length   :10000   Length   :10000   Length   :10000  
-##  N.unique :    8   N.unique :    8   N.unique :    8   N.unique :    8  
-##  N.blank  :    0   N.blank  :    0   N.blank  :    0   N.blank  :    0  
-##  Min.nchar:    1   Min.nchar:    1   Min.nchar:    1   Min.nchar:    1  
-##  Max.nchar:    5   Max.nchar:    5   Max.nchar:    5   Max.nchar:    5  
-##                                                                         
-##      2025.07.31        2025.08.31        2025.09.30        2025.10.31   
-##  Length   :10000   Length   :10000   Length   :10000   Length   :10000  
-##  N.unique :    8   N.unique :    8   N.unique :    8   N.unique :    8  
-##  N.blank  :    0   N.blank  :    0   N.blank  :    0   N.blank  :    0  
-##  Min.nchar:    1   Min.nchar:    1   Min.nchar:    1   Min.nchar:    1  
-##  Max.nchar:    5   Max.nchar:    5   Max.nchar:    5   Max.nchar:    5  
-##                                                                         
-##      2025.11.30        2025.12.31   
-##  Length   :10000   Length   :10000  
-##  N.unique :    8   N.unique :    8  
-##  N.blank  :    0   N.blank  :    0  
-##  Min.nchar:    1   Min.nchar:    1  
-##  Max.nchar:    5   Max.nchar:    5  
-##                                     
-## 
-## [[2]]
-##     Obligor             Rating       Industry     Loan.Volume    
-##  Min.   :  1.00   Length   :100   Min.   :1.00   Min.   : 21000  
-##  1st Qu.: 25.75   N.unique :  7   1st Qu.:1.00   1st Qu.: 59750  
-##  Median : 50.50   N.blank  :  0   Median :2.00   Median :112000  
-##  Mean   : 50.50   Min.nchar:  1   Mean   :1.87   Mean   :165760  
-##  3rd Qu.: 75.25   Max.nchar:  5   3rd Qu.:3.00   3rd Qu.:166000  
-##  Max.   :100.00                   Max.   :3.00   Max.   :850000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{nrow}\NormalTok{(ratings)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 10000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{nrow}\NormalTok{(portfolio)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 100
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{print}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##  [1] "Obligor"    "2024.12.31" "2025.01.31" "2025.02.28" "2025.03.31"
-##  [6] "2025.04.30" "2025.05.31" "2025.06.30" "2025.07.31" "2025.08.31"
-## [11] "2025.09.30" "2025.10.31" "2025.11.30" "2025.12.31"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{print}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(portfolio))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] "Obligor"     "Rating"      "Industry"    "Loan.Volume"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# Correctly parse the dots and format to dashes}
-\FunctionTok{colnames}\NormalTok{(ratings)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{] }\OtherTok{\textless{}{-}} \FunctionTok{format}\NormalTok{(}\FunctionTok{as.Date}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings)[}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{], }\AttributeTok{format =} \StringTok{"\%Y.\%m.\%d"}\NormalTok{), }\StringTok{"\%Y{-}\%m{-}\%d"}\NormalTok{)}
-\FunctionTok{print}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##  [1] "Obligor"    "2024-12-31" "2025-01-31" "2025-02-28" "2025-03-31"
-##  [6] "2025-04-30" "2025-05-31" "2025-06-30" "2025-07-31" "2025-08-31"
-## [11] "2025-09-30" "2025-10-31" "2025-11-30" "2025-12-31"
-\end{verbatim}
-
-\section{\texorpdfstring{\textbf{Task}}{Task}}\label{task}
-
-\subsection{}\label{section}
+\subsection{Case-Study Task}\label{case-study-task}
 
 Based on the rating history of 10,000 representative borrowers,
 determine the one-year migration matrix based on the Lando and Skodeberg
-procedure. In doing so, determine the migration matrix using the
-generator matrix based on at least the first five terms.
+procedure. Determine the migration matrix using the generator matrix
+based on at least the first five terms of the matrix exponential.
 
-Estimation of the generator matrix come from this formula:
-\[\lambda_{ij} = \frac{N_{ij}}{\int Y_{i}(s)ds} \qquad i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}\]
+\subsection{Methodology}\label{methodology}
 
-where \(N_{ij}\) is the number of observed migrations from rating \(i\)
-to rating \(j\) and \(Y_{i}(s)\) is the number of borrowers in rating
-\(i\) at time \(s\). And the integral: \(\int Y_{i}(s)ds\) is the total
-time spent by all borrowers in rating \(i\) during the observation
-period. The one-year migration matrix can then be obtained by
-exponentiating the generator matrix:
-\(W(\Delta t) = e^{\Lambda \cdot \Delta t} = \sum_{k=0}^{\infty} \frac{(\Lambda \cdot \Delta t)^k}{k!}\)
+The Lando--Skodeberg {[}2002{]} estimator models rating dynamics as a
+time-homogeneous Markov chain in continuous time. The generator matrix
+\(\Lambda\) collects the instantaneous transition intensities. Its
+maximum-likelihood estimator, given the full rating history of all
+obligors, is
+
+\[
+\hat\lambda_{ij} \;=\; \frac{N_{ij}}{\int_0^T Y_i(s)\,ds}\,,\quad i \neq j,
+\qquad
+\hat\lambda_{ii} \;=\; -\sum_{j \neq i} \hat\lambda_{ij},
+\]
+
+where \(N_{ij}\) is the observed number of migrations from rating \(i\)
+to rating \(j\) during the window \([0, T]\), and \(Y_i(s)\) is the
+number of obligors in state \(i\) at time \(s\), so the denominator is
+the total obligor-time spent in the from-state (slide p.126 of
+\texttt{docs/01\_Slides\_QFin\_AT\ in\ Banking\_V1\_Handout.pdf}). The
+one-year migration matrix is then obtained by exponentiating the
+generator,
+
+\[
+P(\Delta t) \;=\; e^{\Lambda \cdot \Delta t} \;=\; \sum_{k=0}^{\infty}
+\frac{(\Lambda \cdot \Delta t)^k}{k!},
+\]
+
+which we evaluate via a truncated Taylor expansion (slide p.132).
+Default is modelled as an absorbing state, so the row of \(\Lambda\)
+corresponding to \(\mathrm{D}\) is identically zero.
+
+\subsection{State Space and Long-Format
+Transitions}\label{state-space-and-long-format-transitions}
+
+The 8-state rating universe used in this report is ordered from highest
+quality to default, matching the lecture convention:
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{ratings\_order }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"AAA"}\NormalTok{, }\StringTok{"AA"}\NormalTok{, }\StringTok{"A"}\NormalTok{, }\StringTok{"BBB"}\NormalTok{, }\StringTok{"BB"}\NormalTok{, }\StringTok{"B"}\NormalTok{, }\StringTok{"CCC/C"}\NormalTok{, }\StringTok{"D"}\NormalTok{)}
 \NormalTok{K }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(ratings\_order)}
 
-\CommentTok{\# melt ratings to long format}
+\CommentTok{\# Wide {-}\textgreater{} long: one row per (Obligor, snapshot date, rating).}
 \NormalTok{ratings\_long }\OtherTok{\textless{}{-}} \FunctionTok{melt}\NormalTok{(}
 \NormalTok{    ratings,}
-    \AttributeTok{id.vars =} \StringTok{"Obligor"}\NormalTok{,}
-    \AttributeTok{variable.name =} \StringTok{"date"}\NormalTok{,}
-    \AttributeTok{value.name =} \StringTok{"rating"}\NormalTok{,}
+    \AttributeTok{id.vars         =} \StringTok{"Obligor"}\NormalTok{,}
+    \AttributeTok{variable.name   =} \StringTok{"date"}\NormalTok{,}
+    \AttributeTok{value.name      =} \StringTok{"rating"}\NormalTok{,}
     \AttributeTok{variable.factor =} \ConstantTok{FALSE}
 \NormalTok{)}
-
-\NormalTok{ratings\_long[, date }\SpecialCharTok{:=} \FunctionTok{as.Date}\NormalTok{(date)]}
+\NormalTok{ratings\_long[, date   }\SpecialCharTok{:=} \FunctionTok{as.Date}\NormalTok{(date)]}
 \NormalTok{ratings\_long[, rating }\SpecialCharTok{:=} \FunctionTok{factor}\NormalTok{(rating, }\AttributeTok{levels =}\NormalTok{ ratings\_order)]}
-
-
 \FunctionTok{setorder}\NormalTok{(ratings\_long, Obligor, date)}
 
-\FunctionTok{nrow}\NormalTok{(ratings\_long)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 130000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{class}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{date)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] "Date"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{levels}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{rating)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] "AAA"   "AA"    "A"     "BBB"   "BB"    "B"     "CCC/C" "D"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{rating))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 0
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{setdiff}\NormalTok{((}\FunctionTok{unique}\NormalTok{(}\FunctionTok{as.character}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{rating))), ratings\_order)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## character(0)
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{head}\NormalTok{(ratings\_long, }\DecValTok{10}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}rll@{}}
-\toprule\noalign{}
-Obligor & date & rating \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-1 & 2024-12-31 & CCC/C \\
-1 & 2025-01-31 & CCC/C \\
-1 & 2025-02-28 & CCC/C \\
-1 & 2025-03-31 & B \\
-1 & 2025-04-30 & B \\
-1 & 2025-05-31 & B \\
-1 & 2025-06-30 & B \\
-1 & 2025-07-31 & B \\
-1 & 2025-08-31 & B \\
-1 & 2025-09-30 & B \\
-\end{longtable}
-}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{ncol}\NormalTok{(ratings) }\SpecialCharTok{{-}} \DecValTok{1}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 13
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{head}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings), }\DecValTok{25}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##  [1] "Obligor"    "2024-12-31" "2025-01-31" "2025-02-28" "2025-03-31"
-##  [6] "2025-04-30" "2025-05-31" "2025-06-30" "2025-07-31" "2025-08-31"
-## [11] "2025-09-30" "2025-10-31" "2025-11-30" "2025-12-31"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{range}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{date)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] "2024-12-31" "2025-12-31"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{date))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 13
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# prev rating column}
-\NormalTok{ratings\_long[, prev\_rating }\SpecialCharTok{:=} \FunctionTok{shift}\NormalTok{(rating, }\AttributeTok{n =} \DecValTok{1}\DataTypeTok{L}\NormalTok{, }\AttributeTok{type =} \StringTok{"lag"}\NormalTok{), by }\OtherTok{=}\NormalTok{ Obligor]}
-
-\CommentTok{\# drop first rows of each obligot}
+\CommentTok{\# Add the previous{-}month rating within each obligor; the first row of each}
+\CommentTok{\# obligor receives NA because no prior snapshot exists.}
+\NormalTok{ratings\_long[, prev\_rating }\SpecialCharTok{:=} \FunctionTok{shift}\NormalTok{(rating, }\AttributeTok{n =} \DecValTok{1}\DataTypeTok{L}\NormalTok{, }\AttributeTok{type =} \StringTok{"lag"}\NormalTok{),}
+\NormalTok{             by }\OtherTok{=}\NormalTok{ Obligor]}
 \NormalTok{transitions }\OtherTok{\textless{}{-}}\NormalTok{ ratings\_long[}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(prev\_rating)]}
+\end{Highlighting}
+\end{Shaded}
 
+\begin{longtable}[t]{rlll}
+\caption{\label{tab:task1-preview}Sample of obligor transitions (first five rows of the long table).}\\
+\toprule
+Obligor & date & prev\_rating & rating\\
+\midrule
+1 & 2025-01-31 & CCC/C & CCC/C\\
+1 & 2025-02-28 & CCC/C & CCC/C\\
+1 & 2025-03-31 & CCC/C & B\\
+1 & 2025-04-30 & B & B\\
+1 & 2025-05-31 & B & B\\
+\bottomrule
+\end{longtable}
 
-\CommentTok{\# cross tabulate: rows = from, cols = to, it means how many times we observed a transition from rating i to rating j}
-\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{table}\NormalTok{(}\AttributeTok{from =}\NormalTok{ transitions}\SpecialCharTok{$}\NormalTok{prev\_rating, }\AttributeTok{to =}\NormalTok{ transitions}\SpecialCharTok{$}\NormalTok{rating)}
+Reshaping from wide to long yields one row per obligor-snapshot
+observation, and lagging within \texttt{Obligor} produces the
+\texttt{(prev\_rating\ -\textgreater{}\ rating)} pairs that feed the
+migration count. Pairs where \texttt{prev\_rating} is \texttt{NA} (the
+first observation of each obligor) carry no transition information and
+are dropped. The data span 13 monthly snapshots from 2024-12-31 to
+2025-12-31, giving 12 transitions per obligor and a total of
+\(10{,}000 \times 12 = 120{,}000\) transition pairs.
 
-\CommentTok{\# convert from table to matrix}
-\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{unclass}\NormalTok{(N)}
+\subsection{\texorpdfstring{Migration Counts
+\(N_{ij}\)}{Migration Counts N\_\{ij\}}}\label{migration-counts-n_ij}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{unclass}\NormalTok{(}\FunctionTok{table}\NormalTok{(}\AttributeTok{from =}\NormalTok{ transitions}\SpecialCharTok{$}\NormalTok{prev\_rating,}
+                   \AttributeTok{to   =}\NormalTok{ transitions}\SpecialCharTok{$}\NormalTok{rating))}
 \FunctionTok{storage.mode}\NormalTok{(N) }\OtherTok{\textless{}{-}} \StringTok{"double"}
-
-
-\FunctionTok{dim}\NormalTok{(N)}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{verbatim}
-## [1] 8 8
-\end{verbatim}
+\begin{longtable}[t]{lrrrrrrrr}
+\caption{\label{tab:task1-N-table}Migration count matrix $N_{ij}$: observed transitions from row-rating to column-rating.}\\
+\toprule
+ & AAA & AA & A & BBB & BB & B & CCC/C & D\\
+\midrule
+AAA & 5,860 & 37 & 4 & 1 & 1 & 0 & 0 & 0\\
+AA & 7 & 11,417 & 85 & 11 & 0 & 0 & 0 & 0\\
+A & 1 & 39 & 23,191 & 104 & 6 & 4 & 1 & 4\\
+BBB & 1 & 11 & 120 & 35,982 & 164 & 28 & 7 & 10\\
+BB & 2 & 0 & 5 & 102 & 23,440 & 163 & 22 & 19\\
+\addlinespace
+B & 0 & 0 & 1 & 2 & 52 & 11,927 & 62 & 65\\
+CCC/C & 0 & 0 & 4 & 6 & 7 & 45 & 5,322 & 161\\
+D & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1,497\\
+\bottomrule
+\end{longtable}
+
+The count matrix is strongly diagonal-dominant: obligors are far more
+likely to stay in their current rating than to migrate. Off-diagonal
+mass concentrates immediately adjacent to the diagonal --- single-notch
+moves dominate two-notch moves --- consistent with the rating-momentum
+literature. The bottom row is identically zero off the diagonal because
+default is absorbing in this state space, so no transitions originate
+from \(\mathrm{D}\). The first few new defaults (4 from A, 10 from BBB,
+19 from BB, 65 from B, 161 from CCC/C) are visible in the last column
+and rise monotonically with risk, which is the qualitative behaviour the
+IRB and simulation calibrations will inherit.
+
+\subsection{\texorpdfstring{Time in State
+\(Y_i\)}{Time in State Y\_i}}\label{time-in-state-y_i}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{rownames}\NormalTok{(N)}
+\CommentTok{\# Add previous snapshot date alongside previous rating, then compute the}
+\CommentTok{\# length of each interval (in years) for the from{-}state\textquotesingle{}s account.}
+\NormalTok{ratings\_long[, prev\_date }\SpecialCharTok{:=} \FunctionTok{shift}\NormalTok{(date, }\AttributeTok{n =} \DecValTok{1}\DataTypeTok{L}\NormalTok{, }\AttributeTok{type =} \StringTok{"lag"}\NormalTok{),}
+\NormalTok{             by }\OtherTok{=}\NormalTok{ Obligor]}
+\NormalTok{ratings\_long[, dt }\SpecialCharTok{:=} \FunctionTok{as.numeric}\NormalTok{(date }\SpecialCharTok{{-}}\NormalTok{ prev\_date) }\SpecialCharTok{/} \FloatTok{365.25}\NormalTok{]}
+
+\NormalTok{Y }\OtherTok{\textless{}{-}} \FunctionTok{tapply}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{dt, ratings\_long}\SpecialCharTok{$}\NormalTok{prev\_rating,}
+\NormalTok{            sum, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{Y }\OtherTok{\textless{}{-}}\NormalTok{ Y[ratings\_order]}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{verbatim}
-## [1] "AAA"   "AA"    "A"     "BBB"   "BB"    "B"     "CCC/C" "D"
-\end{verbatim}
+\begin{longtable}[t]{lr}
+\caption{\label{tab:task1-Y-table}Total time spent by all obligors in each rating $i$ (obligor-years).}\\
+\toprule
+Rating & Obligor-years\\
+\midrule
+AAA & 491.49\\
+AA & 959.33\\
+A & 1944.64\\
+BBB & 3024.57\\
+BB & 1977.84\\
+\addlinespace
+B & 1008.54\\
+CCC/C & 461.51\\
+D & 125.23\\
+\bottomrule
+\end{longtable}
+
+Each obligor contributes the year-fraction between consecutive snapshots
+to the rating it occupied at the start of that interval. Summing across
+obligors gives the denominator of the Lando--Skodeberg estimator. The
+exposure-time distribution mirrors the data's rating distribution: the
+investment-grade buckets (BBB, A, BB) accumulate the most obligor-years,
+while AAA and CCC/C are sparsely populated, which mechanically inflates
+the variance of those rows of \(\Lambda\). The total
+\(\sum_i Y_i \approx 9{,}993\) obligor-years almost exactly equals
+10,000 obligors \(\times\) 1 year of window; the small shortfall
+reflects the unequal calendar lengths of individual months.
+
+\subsection{\texorpdfstring{Generator Matrix
+\(\Lambda\)}{Generator Matrix \textbackslash Lambda}}\label{generator-matrix-lambda}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{colnames}\NormalTok{(N)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] "AAA"   "AA"    "A"     "BBB"   "BB"    "B"     "CCC/C" "D"
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{sum}\NormalTok{(N)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 120000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{diag}\NormalTok{(N) }\SpecialCharTok{/} \FunctionTok{rowSums}\NormalTok{(N)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##       AAA        AA         A       BBB        BB         B     CCC/C         D 
-## 0.9927156 0.9910590 0.9931906 0.9906120 0.9868227 0.9849699 0.9597836 1.0000000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{N[}\StringTok{"D"}\NormalTok{,]}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##   AAA    AA     A   BBB    BB     B CCC/C     D 
-##     0     0     0     0     0     0     0  1497
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{N}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##        to
-## from     AAA    AA     A   BBB    BB     B CCC/C    D
-##   AAA   5860    37     4     1     1     0     0    0
-##   AA       7 11417    85    11     0     0     0    0
-##   A        1    39 23191   104     6     4     1    4
-##   BBB      1    11   120 35982   164    28     7   10
-##   BB       2     0     5   102 23440   163    22   19
-##   B        0     0     1     2    52 11927    62   65
-##   CCC/C    0     0     4     6     7    45  5322  161
-##   D        0     0     0     0     0     0     0 1497
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# exact days between ratings}
-\NormalTok{ratings\_long[, prev\_date }\SpecialCharTok{:=} \FunctionTok{shift}\NormalTok{(date, }\AttributeTok{n =} \DecValTok{1}\DataTypeTok{L}\NormalTok{, }\AttributeTok{type =} \StringTok{"lag"}\NormalTok{), by }\OtherTok{=}\NormalTok{ Obligor]}
-\NormalTok{ratings\_long[, dt }\SpecialCharTok{:=} \FunctionTok{as.numeric}\NormalTok{((date }\SpecialCharTok{{-}}\NormalTok{ prev\_date) }\SpecialCharTok{/} \FloatTok{365.25}\NormalTok{)]}
-
-\CommentTok{\# tapply to apply sum to dt by prev\_rating, so we get the total time spent in each rating category}
-\CommentTok{\# tapply arguments: 1) the vector to apply the function to, 2) the factor to group by, 3) the function to apply, 4) na.rm = TRUE to ignore NA values}
-\NormalTok{Y }\OtherTok{\textless{}{-}} \FunctionTok{tapply}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{dt, ratings\_long}\SpecialCharTok{$}\NormalTok{prev\_rating, sum, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
-
-\NormalTok{Y }\OtherTok{\textless{}{-}}\NormalTok{ Y[ratings\_order] }\CommentTok{\# reorder Y according to ratings\_order}
-
-
-\NormalTok{Y }\CommentTok{\# total time spent in each rating category}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##       AAA        AA         A       BBB        BB         B     CCC/C         D 
-##  491.4935  959.3292 1944.6434 3024.5667 1977.8426 1008.5394  461.5140  125.2266
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{length}\NormalTok{(Y) }\CommentTok{\# number of rating categories}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 8
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{sum}\NormalTok{(Y) }\CommentTok{\# total time spent in all rating categories}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 9993.155
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{Y }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(Y) }\CommentTok{\# proportion of time spent in each rating category}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##        AAA         AA          A        BBB         BB          B      CCC/C 
-## 0.04918301 0.09599863 0.19459753 0.30266384 0.19791973 0.10092301 0.04618301 
-##          D 
-## 0.01253123
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# check: total time spent in all ratings should be equal to the total time between the first and last rating for all obligors}
-\FunctionTok{cbind}\NormalTok{(}\AttributeTok{N\_rowsum =} \FunctionTok{rowSums}\NormalTok{(N), }\AttributeTok{Y\_times\_12 =}\NormalTok{ Y }\SpecialCharTok{*} \DecValTok{12}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##       N_rowsum Y_times_12
-## AAA       5903   5897.922
-## AA       11520  11511.951
-## A        23350  23335.721
-## BBB      36323  36294.801
-## BB       23753  23734.111
-## B        12109  12102.472
-## CCC/C     5545   5538.168
-## D         1497   1502.719
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\CommentTok{\# off diagonal elements of the generator matrix, divide the number of transitions by the total time spent in the rating category}
+\CommentTok{\# Off{-}diagonal entries: lambda\_\{ij\} = N\_\{ij\} / Y\_i (sweep divides row i by Y\_i).}
 \NormalTok{Lambda }\OtherTok{\textless{}{-}} \FunctionTok{sweep}\NormalTok{(N, }\AttributeTok{MARGIN =} \DecValTok{1}\NormalTok{, }\AttributeTok{STATS =}\NormalTok{ Y, }\AttributeTok{FUN =} \StringTok{"/"}\NormalTok{)}
 
+\CommentTok{\# Stays are not transitions: wipe the diagonal, then set it to the negative}
+\CommentTok{\# row{-}sum so each row of Lambda sums to zero.}
 \FunctionTok{diag}\NormalTok{(Lambda) }\OtherTok{\textless{}{-}} \DecValTok{0}
-
 \FunctionTok{diag}\NormalTok{(Lambda) }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\FunctionTok{rowSums}\NormalTok{(Lambda)}
-
-\FunctionTok{rowSums}\NormalTok{(Lambda)}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{verbatim}
-##           AAA            AA             A           BBB            BB 
-##  8.673617e-18 -1.734723e-18  9.540979e-18  1.084202e-17 -3.469447e-18 
-##             B         CCC/C             D 
-##  0.000000e+00  0.000000e+00  0.000000e+00
-\end{verbatim}
+\begin{longtable}[t]{lrrrrrrrr}
+\caption{\label{tab:task1-Lambda-table}Estimated generator $\Lambda$ (annualised transition intensities).}\\
+\toprule
+ & AAA & AA & A & BBB & BB & B & CCC/C & D\\
+\midrule
+AAA & -0.0875 & 0.0753 & 0.0081 & 0.0020 & 0.0020 & 0.0000 & 0.0000 & 0.0000\\
+AA & 0.0073 & -0.1074 & 0.0886 & 0.0115 & 0.0000 & 0.0000 & 0.0000 & 0.0000\\
+A & 0.0005 & 0.0201 & -0.0818 & 0.0535 & 0.0031 & 0.0021 & 0.0005 & 0.0021\\
+BBB & 0.0003 & 0.0036 & 0.0397 & -0.1127 & 0.0542 & 0.0093 & 0.0023 & 0.0033\\
+BB & 0.0010 & 0.0000 & 0.0025 & 0.0516 & -0.1583 & 0.0824 & 0.0111 & 0.0096\\
+\addlinespace
+B & 0.0000 & 0.0000 & 0.0010 & 0.0020 & 0.0516 & -0.1805 & 0.0615 & 0.0644\\
+CCC/C & 0.0000 & 0.0000 & 0.0087 & 0.0130 & 0.0152 & 0.0975 & -0.4832 & 0.3489\\
+D & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000 & 0.0000\\
+\bottomrule
+\end{longtable}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{all}\NormalTok{(}\FunctionTok{abs}\NormalTok{(}\FunctionTok{rowSums}\NormalTok{(Lambda)) }\SpecialCharTok{\textless{}} \FloatTok{1e{-}10}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
+Off-diagonal entries are instantaneous transition intensities, while the
+diagonal equals the negative row-sum so mass is conserved. Row sums are
+zero to machine precision (largest absolute deviation 1.1e-17).
+Intensities grow sharply as we move down the rating ladder: the
+magnitude of the CCC/C diagonal is roughly an order of magnitude larger
+than the AAA diagonal, meaning CCC/C-rated obligors leave their bucket
+much faster than high-grade names --- which, after exponentiation, will
+translate into PDs differing by several orders of magnitude.
 
-\begin{verbatim}
-## [1] TRUE
-\end{verbatim}
+\subsection{Matrix Exponential --- One-Year Migration
+Matrix}\label{matrix-exponential-one-year-migration-matrix}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{all}\NormalTok{(Lambda[}\FunctionTok{row}\NormalTok{(Lambda) }\SpecialCharTok{!=} \FunctionTok{col}\NormalTok{(Lambda)] }\SpecialCharTok{\textgreater{}=} \DecValTok{0}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] TRUE
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{all}\NormalTok{(}\FunctionTok{diag}\NormalTok{(Lambda) }\SpecialCharTok{\textless{}=} \DecValTok{0}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] TRUE
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{Lambda[}\StringTok{"D"}\NormalTok{,]}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##   AAA    AA     A   BBB    BB     B CCC/C     D 
-##     0     0     0     0     0     0     0     0
-\end{verbatim}
+We implement the truncated Taylor expansion of \(e^{\Lambda}\) with the
+standard recursion
+\(\mathrm{term}_k = \mathrm{term}_{k-1} \cdot \Lambda / k\), which
+avoids any explicit factorial and uses one matrix multiplication per
+iteration:
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{expm\_taylor }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(M, k\_max) \{}
-
-\NormalTok{    K }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(M)}
-\NormalTok{    P }\OtherTok{\textless{}{-}} \FunctionTok{diag}\NormalTok{(K)}
-\NormalTok{    term }\OtherTok{\textless{}{-}} \FunctionTok{diag}\NormalTok{(K)}
-    \ControlFlowTok{for}\NormalTok{ (k }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{k\_max) \{}
+\NormalTok{    K    }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(M)}
+\NormalTok{    P    }\OtherTok{\textless{}{-}} \FunctionTok{diag}\NormalTok{(K)            }\CommentTok{\# k = 0 term (identity)}
+\NormalTok{    term }\OtherTok{\textless{}{-}} \FunctionTok{diag}\NormalTok{(K)            }\CommentTok{\# running term  M\^{}k / k!}
+    \ControlFlowTok{for}\NormalTok{ (k }\ControlFlowTok{in} \FunctionTok{seq\_len}\NormalTok{(k\_max)) \{}
 \NormalTok{        term }\OtherTok{\textless{}{-}}\NormalTok{ (term }\SpecialCharTok{\%*\%}\NormalTok{ M) }\SpecialCharTok{/}\NormalTok{ k}
-\NormalTok{        P }\OtherTok{\textless{}{-}}\NormalTok{ P }\SpecialCharTok{+}\NormalTok{ term}
+\NormalTok{        P    }\OtherTok{\textless{}{-}}\NormalTok{ P }\SpecialCharTok{+}\NormalTok{ term}
 \NormalTok{    \}}
     \FunctionTok{dimnames}\NormalTok{(P) }\OtherTok{\textless{}{-}} \FunctionTok{dimnames}\NormalTok{(M)}
 \NormalTok{    P}
 \NormalTok{\}}
 
-\NormalTok{P5 }\OtherTok{\textless{}{-}}  \FunctionTok{expm\_taylor}\NormalTok{(Lambda, }\AttributeTok{k\_max =} \DecValTok{5}\NormalTok{)}
-\NormalTok{P20 }\OtherTok{\textless{}{-}} \FunctionTok{expm\_taylor}\NormalTok{(Lambda, }\AttributeTok{k\_max =} \DecValTok{20}\NormalTok{)}
+\NormalTok{P5  }\OtherTok{\textless{}{-}} \FunctionTok{expm\_taylor}\NormalTok{(Lambda, }\AttributeTok{k\_max =} \DecValTok{5}\NormalTok{)   }\CommentTok{\# case{-}study minimum}
+\NormalTok{P20 }\OtherTok{\textless{}{-}} \FunctionTok{expm\_taylor}\NormalTok{(Lambda, }\AttributeTok{k\_max =} \DecValTok{20}\NormalTok{)  }\CommentTok{\# essentially exact}
 
-
-\FunctionTok{rowSums}\NormalTok{(P5)}
+\NormalTok{trunc\_error  }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(P5 }\SpecialCharTok{{-}}\NormalTok{ P20))}
+\NormalTok{expm\_compare }\OtherTok{\textless{}{-}} \FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(P20 }\SpecialCharTok{{-}}\NormalTok{ expm}\SpecialCharTok{::}\FunctionTok{expm}\NormalTok{(Lambda)))}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{verbatim}
-##   AAA    AA     A   BBB    BB     B CCC/C     D 
-##     1     1     1     1     1     1     1     1
-\end{verbatim}
+\begin{longtable}[t]{lrrrrrrrr}
+\caption{\label{tab:task1-P5-table}One-year migration matrix $P^{(5)}$ from the 5-term Taylor expansion (\%).}\\
+\toprule
+ & AAA & AA & A & BBB & BB & B & CCC/C & D\\
+\midrule
+AAA & 91.648 & 6.840 & 1.057 & 0.253 & 0.188 & 0.010 & 0.002 & 0.003\\
+AA & 0.665 & 89.927 & 8.090 & 1.244 & 0.044 & 0.015 & 0.003 & 0.011\\
+A & 0.055 & 1.837 & 92.329 & 4.876 & 0.409 & 0.220 & 0.052 & 0.224\\
+BBB & 0.035 & 0.363 & 3.626 & 89.562 & 4.771 & 1.007 & 0.223 & 0.412\\
+BB & 0.090 & 0.015 & 0.325 & 4.531 & 85.674 & 7.035 & 1.011 & 1.319\\
+\addlinespace
+B & 0.002 & 0.002 & 0.119 & 0.321 & 4.403 & 83.898 & 4.459 & 6.796\\
+CCC/C & 0.001 & 0.009 & 0.686 & 1.033 & 1.329 & 7.091 & 61.893 & 27.958\\
+D & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 100.000\\
+\bottomrule
+\end{longtable}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{rowSums}\NormalTok{(P20)}
-\end{Highlighting}
-\end{Shaded}
+\begin{longtable}[t]{lrrrrrrrr}
+\caption{\label{tab:task1-P20-table}One-year migration matrix $P^{(20)}$ from the 20-term Taylor expansion (\%).}\\
+\toprule
+ & AAA & AA & A & BBB & BB & B & CCC/C & D\\
+\midrule
+AAA & 91.648 & 6.840 & 1.057 & 0.253 & 0.188 & 0.010 & 0.002 & 0.003\\
+AA & 0.665 & 89.927 & 8.090 & 1.244 & 0.044 & 0.015 & 0.003 & 0.011\\
+A & 0.055 & 1.837 & 92.329 & 4.876 & 0.409 & 0.220 & 0.052 & 0.224\\
+BBB & 0.035 & 0.363 & 3.626 & 89.562 & 4.771 & 1.007 & 0.223 & 0.412\\
+BB & 0.090 & 0.015 & 0.325 & 4.531 & 85.674 & 7.035 & 1.011 & 1.319\\
+\addlinespace
+B & 0.002 & 0.002 & 0.119 & 0.321 & 4.403 & 83.898 & 4.459 & 6.796\\
+CCC/C & 0.001 & 0.009 & 0.686 & 1.033 & 1.329 & 7.091 & 61.895 & 27.956\\
+D & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 100.000\\
+\bottomrule
+\end{longtable}
 
-\begin{verbatim}
-##   AAA    AA     A   BBB    BB     B CCC/C     D 
-##     1     1     1     1     1     1     1     1
-\end{verbatim}
+The case-study requires at least five terms of the series (slide p.132);
+we additionally compute the 20-term expansion as a benchmark. The
+maximum absolute element-wise difference between \(P^{(5)}\) and
+\(P^{(20)}\) is 2e-05, i.e.~the 5-term truncation is already accurate to
+about two parts in \(10^5\) on every cell. For external validation,
+\(P^{(20)}\) agrees with \texttt{expm::expm(Lambda)} to 2.2e-16, which
+is machine precision. The diagonal entries of \(P^{(20)}\) give the
+one-year \emph{persistence} probability for each rating, falling from
+\$\sim\$91.6\% for AAA to \$\sim\$61.9\% for CCC/C, and the last row
+equals \((0, \dots, 0, 1)\) exactly, confirming that default remains
+absorbing under the exponential map.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(}\FunctionTok{rowSums}\NormalTok{(P20) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 4.440892e-16
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{range}\NormalTok{(P5)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 0 1
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{range}\NormalTok{(P20)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 0 1
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{P20[}\StringTok{"D"}\NormalTok{,]}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-##   AAA    AA     A   BBB    BB     B CCC/C     D 
-##     0     0     0     0     0     0     0     1
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(P5 }\SpecialCharTok{{-}}\NormalTok{ P20))}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 1.955294e-05
-\end{verbatim}
+\subsection{One-Year PD Vector (with 5 bp
+Floor)}\label{one-year-pd-vector-with-5-bp-floor}
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{PD\_raw }\OtherTok{\textless{}{-}}\NormalTok{ P20[, }\StringTok{"D"}\NormalTok{]}
-
-\NormalTok{PD }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(PD\_raw, }\FloatTok{0.0005}\NormalTok{) }\CommentTok{\# set a floor for PD to avoid zero probabilities}
-\FunctionTok{data.frame}\NormalTok{(}\AttributeTok{rating =} \FunctionTok{names}\NormalTok{(PD), PD\_raw, PD)}
+\NormalTok{PD     }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(PD\_raw, }\FloatTok{0.0005}\NormalTok{)   }\CommentTok{\# 5 basis{-}point regulatory floor}
 \end{Highlighting}
 \end{Shaded}
 
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}llrr@{}}
-\toprule\noalign{}
-& rating & PD\_raw & PD \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-AAA & AAA & 0.0000271 & 0.0005000 \\
-AA & AA & 0.0001145 & 0.0005000 \\
-A & A & 0.0022365 & 0.0022365 \\
-BBB & BBB & 0.0041178 & 0.0041178 \\
-BB & BB & 0.0131906 & 0.0131906 \\
-B & B & 0.0679631 & 0.0679631 \\
-CCC/C & CCC/C & 0.2795639 & 0.2795639 \\
-D & D & 1.0000000 & 1.0000000 \\
+\begin{longtable}[t]{lrrl}
+\caption{\label{tab:task1-PD-table}One-year probabilities of default by rating, before and after the 5 bp regulatory floor.}\\
+\toprule
+Rating & PD\_raw & PD & Floored\\
+\midrule
+AAA & 0.000027 & 0.000500 & TRUE\\
+AA & 0.000114 & 0.000500 & TRUE\\
+A & 0.002237 & 0.002237 & FALSE\\
+BBB & 0.004118 & 0.004118 & FALSE\\
+BB & 0.013191 & 0.013191 & FALSE\\
+\addlinespace
+B & 0.067963 & 0.067963 & FALSE\\
+CCC/C & 0.279564 & 0.279564 & FALSE\\
+D & 1.000000 & 1.000000 & FALSE\\
+\bottomrule
 \end{longtable}
-}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{round}\NormalTok{(P20, }\DecValTok{6}\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
+The raw AAA and AA PDs (approximately 2.7e-05 and 1.1e-04) lie below the
+5 basis-point floor required by the regulator (CRR Art. 160(1)). This is
+a well-known feature of investment-grade migration data: the
+highest-quality buckets simply do not generate enough defaults in a
+finite sample for the empirical estimator to be reliable. The floor is
+the supervisor's way of acknowledging that even AAA names carry strictly
+positive default risk. From A downward the empirical PD dominates the
+floor by at least three orders of magnitude, with CCC/C reaching
+\$\sim\$28\%. The full ordering
+\(\text{PD}_{\text{AAA}} < \text{PD}_{\text{AA}} < \cdots <
+\text{PD}_{\text{CCC/C}}\) is preserved, which is necessary for the
+downstream regulatory and simulation models to behave sensibly.
 
-\begin{verbatim}
-##        to
-## from         AAA       AA        A      BBB       BB        B    CCC/C        D
-##   AAA   0.916483 0.068399 0.010571 0.002532 0.001877 0.000095 0.000015 0.000027
-##   AA    0.006645 0.899273 0.080905 0.012437 0.000444 0.000147 0.000035 0.000114
-##   A     0.000550 0.018366 0.923286 0.048762 0.004089 0.002196 0.000515 0.002237
-##   BBB   0.000346 0.003634 0.036263 0.895622 0.047708 0.010075 0.002234 0.004118
-##   BB    0.000904 0.000146 0.003246 0.045310 0.856744 0.070349 0.010110 0.013191
-##   B     0.000024 0.000017 0.001193 0.003208 0.044031 0.838978 0.044586 0.067963
-##   CCC/C 0.000011 0.000091 0.006858 0.010327 0.013291 0.070906 0.618952 0.279564
-##   D     0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 1.000000
-\end{verbatim}
+\subsection{Summary --- Inputs for Downstream
+Tasks}\label{summary-inputs-for-downstream-tasks}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{pacman}\SpecialCharTok{::}\FunctionTok{p\_load}\NormalTok{(expm)}
-\NormalTok{P\_expm }\OtherTok{\textless{}{-}}\NormalTok{ expm}\SpecialCharTok{::}\FunctionTok{expm}\NormalTok{(Lambda)}
-\FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(P\_expm }\SpecialCharTok{{-}}\NormalTok{ P20))}
-\end{Highlighting}
-\end{Shaded}
+The three objects carried forward into Tasks 3, 4 and 5 are:
 
-\begin{verbatim}
-## [1] 2.220446e-16
-\end{verbatim}
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\texttt{PD}} --- 8-vector of one-year PDs by rating, after the
+  5 bp floor. Primary input to the IRB closed-form formula (Task 3) and
+  to both Merton-style simulations (Tasks 4 and 5).
+\item
+  \textbf{\texttt{P20}} --- 8 \(\times\) 8 one-year migration matrix.
+  Useful if a downstream task needs the full migration probabilities
+  rather than just the default column.
+\item
+  \textbf{\texttt{Lambda}} --- the underlying generator. Useful for
+  computing migration probabilities at any horizon \(\Delta t\) via
+  \(P(\Delta t) = e^{\Lambda \Delta t}\).
+\end{itemize}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{PD\_raw }\OtherTok{\textless{}{-}}\NormalTok{ P20[, }\StringTok{"D"}\NormalTok{]}
-\NormalTok{PD }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(PD\_raw, }\FloatTok{0.0005}\NormalTok{) }\CommentTok{\# set a floor for}
+\section{Task 2 --- Basel Standardized
+Approach}\label{task-2-basel-standardized-approach}
 
-\FunctionTok{data.frame}\NormalTok{(}
-    \AttributeTok{rating =} \FunctionTok{names}\NormalTok{(PD),}
-    \AttributeTok{PD\_raw =} \FunctionTok{round}\NormalTok{(PD\_raw, }\DecValTok{6}\NormalTok{),}
-    \AttributeTok{PD =} \FunctionTok{round}\NormalTok{(PD, }\DecValTok{6}\NormalTok{),}
-    \AttributeTok{floored =}\NormalTok{ PD\_raw }\SpecialCharTok{\textless{}} \FloatTok{0.0005}
-\NormalTok{)}
-\end{Highlighting}
-\end{Shaded}
+\emph{Author: Farkas Tallos}
 
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}llrrl@{}}
-\toprule\noalign{}
-& rating & PD\_raw & PD & floored \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-AAA & AAA & 0.000027 & 0.000500 & TRUE \\
-AA & AA & 0.000114 & 0.000500 & TRUE \\
-A & A & 0.002237 & 0.002237 & FALSE \\
-BBB & BBB & 0.004118 & 0.004118 & FALSE \\
-BB & BB & 0.013191 & 0.013191 & FALSE \\
-B & B & 0.067963 & 0.067963 & FALSE \\
-CCC/C & CCC/C & 0.279564 & 0.279564 & FALSE \\
-D & D & 1.000000 & 1.000000 & FALSE \\
-\end{longtable}
-}
-
-\section{\texorpdfstring{\textbf{Task}}{Task}}\label{task-1}
-
-\subsection{}\label{section-1}
+\subsection{Case-Study Task}\label{case-study-task-1}
 
 Determine the credit risk for the portfolio of 100 borrowers based on
 the Basel Standardized Approach. Proceed by using the existing ratings
 as if they were external ratings.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{str}\NormalTok{(portfolio)}
-\end{Highlighting}
-\end{Shaded}
+\subsection{Regulatory Risk-Weight Lookup (CRR Art.
+122)}\label{regulatory-risk-weight-lookup-crr-art.-122}
 
-\begin{verbatim}
-## Classes 'data.table' and 'data.frame':   100 obs. of  4 variables:
-##  $ Obligor    : num  1 2 3 4 5 6 7 8 9 10 ...
-##  $ Rating     : chr  "BBB" "BB" "BB" "BB" ...
-##  $ Industry   : num  1 3 2 2 1 1 1 3 3 3 ...
-##  $ Loan.Volume: num  169000 149000 850000 76000 174000 108000 122000 33000 22000 38000 ...
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{portfolio[, .N, by }\OtherTok{=}\NormalTok{ Rating][}\FunctionTok{order}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{N)]}
-\end{Highlighting}
-\end{Shaded}
-
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lr@{}}
-\toprule\noalign{}
-Rating & N \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-BBB & 30 \\
-BB & 27 \\
-A & 17 \\
-B & 9 \\
-AA & 8 \\
-CCC/C & 6 \\
-AAA & 3 \\
-\end{longtable}
-}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{sum}\NormalTok{(portfolio}\SpecialCharTok{$}\NormalTok{Loan.Volume)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1] 16576000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{range}\NormalTok{(portfolio}\SpecialCharTok{$}\NormalTok{Loan.Volume)}
-\end{Highlighting}
-\end{Shaded}
-
-\begin{verbatim}
-## [1]  21000 850000
-\end{verbatim}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{portfolio[, .N, by }\OtherTok{=}\NormalTok{ Industry]}
-\end{Highlighting}
-\end{Shaded}
-
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}rr@{}}
-\toprule\noalign{}
-Industry & N \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-1 & 42 \\
-3 & 29 \\
-2 & 29 \\
-\end{longtable}
-}
+Under the Standardized Approach the risk weight applied to a corporate
+exposure is a step function of the external credit assessment (CRR
+Article 122; slide p.208 of
+\texttt{docs/01\_Slides\_QFin\_AT\ in\ Banking\_V1\_Handout.pdf}).
+Following the case-study instruction, we treat the internal ratings as
+if they were ECAI ratings. The mapping from the eight-bucket rating
+universe to risk weights, with defaulted exposures attracting the 150\%
+weight applicable when specific provisions cover less than 20\% of the
+outstanding amount, is:
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \NormalTok{rw\_table }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}
-    \AttributeTok{Rating =} \FunctionTok{c}\NormalTok{(}\StringTok{"AAA"}\NormalTok{, }\StringTok{"AA"}\NormalTok{, }\StringTok{"A"}\NormalTok{, }\StringTok{"BBB"}\NormalTok{, }\StringTok{"BB"}\NormalTok{, }\StringTok{"B"}\NormalTok{, }\StringTok{"CCC/C"}\NormalTok{, }\StringTok{"D"}\NormalTok{),}
-    \AttributeTok{RW =} \FunctionTok{c}\NormalTok{(}\FloatTok{0.20}\NormalTok{, }\FloatTok{0.20}\NormalTok{, }\FloatTok{0.50}\NormalTok{, }\FloatTok{1.00}\NormalTok{, }\FloatTok{1.00}\NormalTok{, }\FloatTok{1.50}\NormalTok{, }\FloatTok{1.50}\NormalTok{, }\FloatTok{1.50}\NormalTok{)}
+    \AttributeTok{Rating =} \FunctionTok{c}\NormalTok{(}\StringTok{"AAA"}\NormalTok{, }\StringTok{"AA"}\NormalTok{,  }\StringTok{"A"}\NormalTok{,  }\StringTok{"BBB"}\NormalTok{, }\StringTok{"BB"}\NormalTok{,  }\StringTok{"B"}\NormalTok{,  }\StringTok{"CCC/C"}\NormalTok{, }\StringTok{"D"}\NormalTok{),}
+    \AttributeTok{RW     =} \FunctionTok{c}\NormalTok{(}\FloatTok{0.20}\NormalTok{,  }\FloatTok{0.20}\NormalTok{,  }\FloatTok{0.50}\NormalTok{, }\FloatTok{1.00}\NormalTok{,  }\FloatTok{1.00}\NormalTok{,  }\FloatTok{1.50}\NormalTok{, }\FloatTok{1.50}\NormalTok{,    }\FloatTok{1.50}\NormalTok{)}
 \NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
 
+\begin{longtable}[t]{lr}
+\caption{\label{tab:task2-rw-table-render}CRR Art. 122 risk weights for corporate exposures.}\\
+\toprule
+Rating & Risk Weight\\
+\midrule
+AAA & 0.2\\
+AA & 0.2\\
+A & 0.5\\
+BBB & 1.0\\
+BB & 1.0\\
+\addlinespace
+B & 1.5\\
+CCC/C & 1.5\\
+D & 1.5\\
+\bottomrule
+\end{longtable}
+
+\subsection{Per-Obligor Risk-Weighted
+Assets}\label{per-obligor-risk-weighted-assets}
+
+\begin{Shaded}
+\begin{Highlighting}[]
 \NormalTok{port\_sa }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(portfolio, rw\_table, }\AttributeTok{by =} \StringTok{"Rating"}\NormalTok{, }\AttributeTok{all.x =} \ConstantTok{TRUE}\NormalTok{)}
-
-\NormalTok{port\_sa[, RWA }\SpecialCharTok{:=}\NormalTok{ Loan.Volume }\SpecialCharTok{*}\NormalTok{ RW]}
-
-\FunctionTok{head}\NormalTok{(port\_sa)}
+\NormalTok{port\_sa[, RWA     }\SpecialCharTok{:=}\NormalTok{ Loan.Volume }\SpecialCharTok{*}\NormalTok{ RW]}
+\NormalTok{port\_sa[, Capital }\SpecialCharTok{:=} \FloatTok{0.08} \SpecialCharTok{*}\NormalTok{ RWA]}
+\FunctionTok{setorder}\NormalTok{(port\_sa, }\SpecialCharTok{{-}}\NormalTok{RWA)}
 \end{Highlighting}
 \end{Shaded}
 
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lrrrrr@{}}
-\toprule\noalign{}
-Rating & Obligor & Industry & Loan.Volume & RW & RWA \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-A & 7 & 1 & 122000 & 0.5 & 61000 \\
-A & 8 & 3 & 33000 & 0.5 & 16500 \\
-A & 13 & 3 & 850000 & 0.5 & 425000 \\
-A & 18 & 1 & 191000 & 0.5 & 95500 \\
-A & 23 & 1 & 850000 & 0.5 & 425000 \\
-A & 24 & 1 & 198000 & 0.5 & 99000 \\
+\begin{longtable}[t]{rlrrrrr}
+\caption{\label{tab:task2-top10}Ten largest obligors by RWA under the Standardized Approach.}\\
+\toprule
+Obligor & Rating & Industry & Loan.Volume & RW & RWA & Capital\\
+\midrule
+27 & CCC/C & 1 & 850,000 & 1.5 & 1,275,000 & 102,000\\
+3 & BB & 2 & 850,000 & 1.0 & 850,000 & 68,000\\
+21 & BB & 3 & 850,000 & 1.0 & 850,000 & 68,000\\
+22 & BBB & 1 & 850,000 & 1.0 & 850,000 & 68,000\\
+67 & BBB & 1 & 850,000 & 1.0 & 850,000 & 68,000\\
+\addlinespace
+13 & A & 3 & 850,000 & 0.5 & 425,000 & 34,000\\
+23 & A & 1 & 850,000 & 0.5 & 425,000 & 34,000\\
+93 & B & 1 & 184,000 & 1.5 & 276,000 & 22,080\\
+5 & CCC/C & 1 & 174,000 & 1.5 & 261,000 & 20,880\\
+96 & B & 3 & 163,000 & 1.5 & 244,500 & 19,560\\
+\bottomrule
 \end{longtable}
-}
+
+\subsection{Aggregated Breakdown by Rating
+Bucket}\label{aggregated-breakdown-by-rating-bucket}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{total\_EAD }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{Loan.Volume)}
-\NormalTok{total\_RWA }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{RWA)}
+\NormalTok{by\_rating }\OtherTok{\textless{}{-}}\NormalTok{ port\_sa[, .(}
+    \AttributeTok{N       =}\NormalTok{ .N,}
+    \AttributeTok{EAD     =} \FunctionTok{sum}\NormalTok{(Loan.Volume),}
+    \AttributeTok{RW      =} \FunctionTok{unique}\NormalTok{(RW),}
+    \AttributeTok{RWA     =} \FunctionTok{sum}\NormalTok{(RWA),}
+    \AttributeTok{Capital =} \FunctionTok{sum}\NormalTok{(Capital)}
+\NormalTok{), by }\OtherTok{=}\NormalTok{ Rating]}
+
+\CommentTok{\# Order by the canonical rating order, not alphabetical.}
+\NormalTok{by\_rating[, Rating }\SpecialCharTok{:=} \FunctionTok{factor}\NormalTok{(Rating, }\AttributeTok{levels =}\NormalTok{ ratings\_order)]}
+\FunctionTok{setorder}\NormalTok{(by\_rating, Rating)}
+
+\CommentTok{\# Append totals row.}
+\NormalTok{totals }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}
+    \AttributeTok{Rating  =} \StringTok{"Total"}\NormalTok{,}
+    \AttributeTok{N       =} \FunctionTok{sum}\NormalTok{(by\_rating}\SpecialCharTok{$}\NormalTok{N),}
+    \AttributeTok{EAD     =} \FunctionTok{sum}\NormalTok{(by\_rating}\SpecialCharTok{$}\NormalTok{EAD),}
+    \AttributeTok{RW      =} \FunctionTok{sum}\NormalTok{(by\_rating}\SpecialCharTok{$}\NormalTok{RWA) }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(by\_rating}\SpecialCharTok{$}\NormalTok{EAD),}
+    \AttributeTok{RWA     =} \FunctionTok{sum}\NormalTok{(by\_rating}\SpecialCharTok{$}\NormalTok{RWA),}
+    \AttributeTok{Capital =} \FunctionTok{sum}\NormalTok{(by\_rating}\SpecialCharTok{$}\NormalTok{Capital)}
+\NormalTok{)}
+\NormalTok{by\_rating\_out }\OtherTok{\textless{}{-}} \FunctionTok{rbind}\NormalTok{(}
+\NormalTok{    by\_rating[, .(}\AttributeTok{Rating =} \FunctionTok{as.character}\NormalTok{(Rating), N, EAD, RW, RWA, Capital)],}
+\NormalTok{    totals}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[t]{lrrrrr}
+\caption{\label{tab:task2-by-rating-render}Standardized Approach breakdown by rating bucket (EUR, RW in decimal).}\\
+\toprule
+Rating & N & EAD & RW & RWA & Capital\\
+\midrule
+AAA & 3 & 279,000 & 0.20 & 55,800 & 4,464\\
+AA & 8 & 1,410,000 & 0.20 & 282,000 & 22,560\\
+A & 17 & 3,430,000 & 0.50 & 1,715,000 & 137,200\\
+BBB & 30 & 4,821,000 & 1.00 & 4,821,000 & 385,680\\
+BB & 27 & 4,428,000 & 1.00 & 4,428,000 & 354,240\\
+\addlinespace
+B & 9 & 887,000 & 1.50 & 1,330,500 & 106,440\\
+CCC/C & 6 & 1,321,000 & 1.50 & 1,981,500 & 158,520\\
+Total & 100 & 16,576,000 & 0.88 & 14,613,800 & 1,169,104\\
+\bottomrule
+\end{longtable}
+
+The portfolio is concentrated in BBB (30 obligors, \$\sim\$29\% of EAD)
+and BB (27 obligors, \$\sim\$27\% of EAD), both of which carry the
+capital-neutral 100\% weight. The eight AA and three AAA names absorb
+20\% weights, the seventeen A-rated obligors 50\%, while the fifteen
+sub-investment-grade names (B and CCC/C combined) are penalised at
+150\%. No obligors are in default in the current book, so the SA
+exposure-weighted risk weight falls between the 75\% (everyone BBB) and
+150\% (everyone CCC/C) extremes that would bracket this rating
+distribution.
+
+\subsection{Headline Capital Numbers}\label{headline-capital-numbers}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{total\_EAD      }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{Loan.Volume)}
+\NormalTok{total\_RWA      }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{RWA)}
 \NormalTok{capital\_req\_SA }\OtherTok{\textless{}{-}} \FloatTok{0.08} \SpecialCharTok{*}\NormalTok{ total\_RWA}
-
-\NormalTok{port\_sa[, .(}
-    \AttributeTok{N =}\NormalTok{ .N,}
-    \AttributeTok{EAD =} \FunctionTok{sum}\NormalTok{(Loan.Volume),}
-    \AttributeTok{RW =} \FunctionTok{unique}\NormalTok{(RW),}
-    \AttributeTok{RWA =} \FunctionTok{sum}\NormalTok{(RWA),}
-    \AttributeTok{Capital =} \FloatTok{0.08} \SpecialCharTok{*} \FunctionTok{sum}\NormalTok{(RWA)}
-\NormalTok{), by }\OtherTok{=}\NormalTok{ Rating][}\FunctionTok{order}\NormalTok{(Rating)]}
+\NormalTok{avg\_rw         }\OtherTok{\textless{}{-}}\NormalTok{ total\_RWA }\SpecialCharTok{/}\NormalTok{ total\_EAD}
+\NormalTok{eff\_cap\_ratio  }\OtherTok{\textless{}{-}}\NormalTok{ capital\_req\_SA }\SpecialCharTok{/}\NormalTok{ total\_EAD}
 \end{Highlighting}
 \end{Shaded}
 
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lrrrrr@{}}
-\toprule\noalign{}
-Rating & N & EAD & RW & RWA & Capital \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-A & 17 & 3430000 & 0.5 & 1715000 & 137200 \\
-AA & 8 & 1410000 & 0.2 & 282000 & 22560 \\
-AAA & 3 & 279000 & 0.2 & 55800 & 4464 \\
-B & 9 & 887000 & 1.5 & 1330500 & 106440 \\
-BB & 27 & 4428000 & 1.0 & 4428000 & 354240 \\
-BBB & 30 & 4821000 & 1.0 & 4821000 & 385680 \\
-CCC/C & 6 & 1321000 & 1.5 & 1981500 & 158520 \\
-\end{longtable}
-}
+Total exposure at default is EUR 16,576,000, total RWA is EUR
+14,613,800, and the minimum capital requirement (8\% of RWA) is EUR
+1,169,104. The exposure-weighted average risk weight is 88.16\%, and the
+effective capital-to-EAD ratio is 7.05\%.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{sum}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{RW))}
-\end{Highlighting}
-\end{Shaded}
+\subsection{Interpretation and
+Limitations}\label{interpretation-and-limitations}
 
-\begin{verbatim}
-## [1] 100
-\end{verbatim}
+The Standardized Approach delivers a minimum capital figure of roughly
+EUR 1.17 m, or 7.05\% of total exposure. That number is mechanically
+driven by the rating distribution and a coarse step-function of risk
+weights; it ignores three economically important features of the
+portfolio. \emph{First}, it makes no use of the empirical PDs we just
+estimated in Task 1: a BBB and a BB obligor receive identical 100\%
+weights despite their Lando--Skodeberg PDs differing by a factor of more
+than three. \emph{Second}, it does not account for concentration risk;
+the largest single exposure attracts exactly the same per-euro weight as
+the smallest. \emph{Third}, it implicitly assumes independence --- there
+is no correlation parameter and therefore no notion of tail or
+unexpected loss. Tasks 3 (IRB), 4 (2-factor Merton with a common market
+factor) and 5 (2-factor Merton with industry factors) progressively
+relax these assumptions, and the resulting capital figures are compared
+in Section \ref{sec:comp}.
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{total\_RWA }\SpecialCharTok{/}\NormalTok{ total\_EAD}
-\end{Highlighting}
-\end{Shaded}
+\section{Task 3 --- Basel IRB Approach}\label{task-3-basel-irb-approach}
 
-\begin{verbatim}
-## [1] 0.881624
-\end{verbatim}
+\emph{Author: Balazs Limpek}
 
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{capital\_req\_SA }\SpecialCharTok{/}\NormalTok{ total\_EAD}
-\end{Highlighting}
-\end{Shaded}
+\subsection{Case-Study Task}\label{case-study-task-2}
 
-\begin{verbatim}
-## [1] 0.07052992
-\end{verbatim}
+\subsection{Implementation}\label{implementation}
+
+\subsection{Results}\label{results}
+
+\section{Task 4 --- 2-Factor Merton with Common Market
+Factor}\label{task-4-2-factor-merton-with-common-market-factor}
+
+\emph{Author: Balazs Limpek}
+
+\subsection{Case-Study Task}\label{case-study-task-3}
+
+\subsection{Implementation}\label{implementation-1}
+
+\subsection{Results}\label{results-1}
+
+\section{Task 5 --- 2-Factor Merton with Industry
+Factors}\label{task-5-2-factor-merton-with-industry-factors}
+
+\emph{Author: Caterina Piacentini}
+
+\subsection{Case-Study Task}\label{case-study-task-4}
+
+\subsection{Implementation}\label{implementation-2}
+
+\subsection{Results}\label{results-2}
+
+\section{Comparison and Conclusions}\label{sec:comp}
+
+\emph{Author: Caterina Piacentini}
+
+\subsection{Capital Requirements Across
+Methods}\label{capital-requirements-across-methods}
+
+\subsection{Discussion}\label{discussion}
+
+\subsection{Limitations and Caveats}\label{limitations-and-caveats}
 
 \end{document}

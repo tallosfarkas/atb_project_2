@@ -520,52 +520,18 @@ the resulting capital figures are compared in Section \ref{sec:comp}.
 
 ## Case-Study Task
 
-Determine the credit risk for the portfolio of 100 borrowers based on the
-Basel IRB Approach based on the regulatory corporate formula. Use the PDs
-from Task 1 (with the 5 bp floor), set the LGDs to 55%, and set the
-maturity to 2.5 years.
+
 
 ## Implementation
 
 ```{r task3-impl, eval=FALSE}
-# IRB corporate formula --- slide p.218 of
-# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf, CRR Art. 153.
-#
-# Inputs from the case study brief:
-#   PD     <- floored PD vector from Task 1 (object `PD`, minimum 5 bp)
-#   LGD    <- 0.55
-#   M      <- 2.5
-#
-# Regulatory correlation as a function of PD:
-#   R(PD) = 0.12 * (1 - exp(-50*PD)) / (1 - exp(-50)) +
-#           0.24 * (1 - (1 - exp(-50*PD)) / (1 - exp(-50)))
-#
-# Maturity adjustment:
-#   b(PD) = (0.11852 - 0.05478 * log(PD))^2
-#
-# Per-obligor capital requirement:
-#   K = LGD * ( pnorm( (qnorm(PD) + sqrt(R) * qnorm(0.999)) /
-#                      sqrt(1 - R) ) - PD ) *
-#       (1 + (M - 2.5) * b) / (1 - 1.5 * b)
-#
-# Risk weight (note the 1.06 scaling factor on slide p.218 --- Basel II
-# convention carried through this course):
-#   RW  = 1.06 * 12.5 * K
-#
-# Aggregation:
-#   RWA_i     = RW_i * EAD_i
-#   Capital_i = K_i  * EAD_i      ( = 8% * RWA_i )
 
-# TODO (Balazs):
-# - Join PDs onto portfolio by Rating.
-# - Compute R, b, K per obligor (vectorised --- single line each).
-# - Aggregate RWA and capital across the portfolio.
-# - Report headline numbers in the same format as Section 2.5 above.
+
 ```
 
 ## Results
 
-*To be completed.*
+
 
 # Task 4 --- 2-Factor Merton with Common Market Factor
 
@@ -573,51 +539,16 @@ maturity to 2.5 years.
 
 ## Case-Study Task
 
-Determine the credit risk for the portfolio of 100 borrowers based on a
-simulation analysis. The simulation is implemented based on the 2-factor
-Merton model with at least 5,000 scenarios. The change in value of each
-firm depends on a common market factor and an idiosyncratic factor. Use
-the PDs from Task 1 (minimum 5 bp), LGDs of 55%, and weight
-$w = 0.37$. Determine the unexpected loss as the 99.9% VaR minus the
-expected loss.
 
 ## Implementation
 
 ```{r task4-impl, eval=FALSE}
-# 2-factor Merton with one common market factor --- slide p.223 of
-# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf.
-#
-# Inputs from the case study brief:
-#   PD       <- floored PD vector from Task 1 (object `PD`)
-#   LGD      <- 0.55
-#   w        <- 0.37
-#   n_sim    <- 5000 minimum; 100,000 recommended for a stable 99.9% quantile
-#
-# Algorithm per scenario:
-#   1. DD_i  = -qnorm(PD_i)
-#   2. Draw common market factor   M     ~ N(0, 1)
-#   3. Draw idiosyncratic factors  eps_i ~ N(0, 1)   (independent across i)
-#   4. Asset value:  V_i = w * M + sqrt(1 - w^2) * eps_i
-#   5. Default if V_i < -DD_i          (equivalently V_i < qnorm(PD_i))
-#   6. Scenario loss = sum_i ( 1{default_i} * LGD * EAD_i )
-#
-# Report:
-#   EL  = mean(loss)
-#   VaR = quantile(loss, 0.999)
-#   UL  = VaR - EL                     <-- the case-study deliverable
-#
-# Use set.seed(...) for reproducibility; agree on a seed with Caterina so
-# that Task 4 and Task 5 simulations are directly comparable.
 
-# TODO (Balazs):
-# - Build (PD, EAD) vectors of length 100 by joining PDs onto portfolio.
-# - Vectorise step 4 with a single matrix of standard normals (100 x n_sim).
-# - Produce a loss-distribution histogram and report EL / VaR / UL.
 ```
 
 ## Results
 
-*To be completed.*
+
 
 # Task 5 --- 2-Factor Merton with Industry Factors
 
@@ -625,58 +556,17 @@ expected loss.
 
 ## Case-Study Task
 
-Determine the credit risk for the portfolio of 100 borrowers based on a
-simulation analysis with the 2-factor Merton model and at least 5,000
-scenarios. The change in value of each firm depends on an industry factor
-and an idiosyncratic factor: firms in the same industry exhibit
-dependence, firms in different industries do not. There are three market
-factors, but only one of them is relevant for each firm. Use the PDs from
-Task 1 (minimum 5 bp), LGDs of 55%, and weight $w = 0.46$. Determine
-the unexpected loss as the 99.9% VaR minus the expected loss.
+
 
 ## Implementation
 
 ```{r task5-impl, eval=FALSE}
-# 2-factor Merton with three industry factors --- slide p.224 of
-# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf, case-study Task 5.
-#
-# Inputs from the case study brief:
-#   PD       <- floored PD vector from Task 1 (object `PD`)
-#   LGD      <- 0.55
-#   w        <- 0.46
-#   n_sim    <- 5000 minimum
-#   Industry <- portfolio$Industry   (integer 1, 2, or 3)
-#
-# Algorithm per scenario:
-#   1. DD_i  = -qnorm(PD_i)
-#   2. Draw three INDEPENDENT industry factors  F_1, F_2, F_3 ~ N(0, 1)
-#   3. Draw idiosyncratic factors                eps_i           ~ N(0, 1)
-#   4. Asset value:  V_i = w * F_{Industry_i} + sqrt(1 - w^2) * eps_i
-#      (each firm loads on exactly ONE industry factor; firms in different
-#       industries are conditionally independent)
-#   5. Default if V_i < qnorm(PD_i)
-#   6. Scenario loss = sum_i ( 1{default_i} * LGD * EAD_i )
-#
-# Report:
-#   EL  = mean(loss)
-#   VaR = quantile(loss, 0.999)
-#   UL  = VaR - EL
-#
-# The 3-industry specification breaks the single common factor of Task 4
-# into three uncorrelated drivers. With portfolio diversification across
-# industries (42 / 29 / 29 obligors), the UL is expected to be lower than
-# Task 4's at the same total weight, even though w is slightly larger
-# (0.46 vs 0.37), because the diversification effect dominates.
 
-# TODO (Caterina):
-# - Reuse the structure of Task 4 but draw a (3 x n_sim) factor matrix and
-#   index into it using portfolio$Industry.
-# - Use the same seed as Task 4 for paired comparison.
 ```
 
 ## Results
 
-*To be completed.*
+
 
 # Comparison and Conclusions {#sec:comp}
 
@@ -685,33 +575,14 @@ the unexpected loss as the 99.9% VaR minus the expected loss.
 ## Capital Requirements Across Methods
 
 ```{r comparison, eval=FALSE}
-# TODO (Caterina): build a single comparison table:
-#
-#   Method                       Capital (EUR)   % of EAD   Notes
-#   --------------------------------------------------------------------------
-#   Standardized Approach          1,169,104       7.05%    No PD / no corr
-#   IRB (regulatory formula)             ...          ...   Single-factor closed form
-#   2-factor Merton (market)             ...          ...   w = 0.37, sim
-#   2-factor Merton (industry)           ...          ...   w = 0.46, 3 industries
+
+
 ```
 
 ## Discussion
 
-*Placeholder for the cross-method discussion required by the deliverable:*
 
-- *Why the four methods produce different capital numbers (rating-only step
-  function vs. continuous PD-dependent regulatory formula vs. simulated tail
-  vs. simulated tail with diversification).*
-- *Advantages and disadvantages of each method (data requirements,
-  computational cost, assumptions, regulatory acceptance).*
-- *Which method should BAWAG prefer and why, given a concentrated mid-grade
-  corporate book.*
 
 ## Limitations and Caveats
 
-- *Single-period horizon and time-homogeneity of the Markov chain.*
-- *Constant LGD assumption (55%) ignores downturn-LGD effects.*
-- *Sample size for the migration counts (10,000 obligors over 12 months)
-  is moderate; CCC/C estimates are noisier than the rest.*
-- *Simulation results depend on the random seed and on the number of
-  scenarios; report Monte Carlo standard errors for the 99.9% quantile.*
+
