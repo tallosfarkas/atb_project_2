@@ -78,6 +78,17 @@
 \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
 \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
 \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
 \usepackage{graphicx}
 \makeatletter
 \newsavebox\pandoc@box
@@ -532,21 +543,565 @@ procedure. In doing so, determine the migration matrix using the
 generator matrix based on at least the first five terms.
 
 Estimation of the generator matrix come from this formula:
-\[\lambda_{ij} = \frac{N_{ij}}{\int Y_{j}(s)ds} i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}\]
+\[\lambda_{ij} = \frac{N_{ij}}{\int Y_{i}(s)ds} \qquad i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}\]
 
 where \(N_{ij}\) is the number of observed migrations from rating \(i\)
-to rating \(j\) and \(Y_{j}(s)\) is the number of borrowers in rating
-\(j\) at time \(s\). And the integral: \(\int Y_{j}(s)ds\) is the total
-time spent by all borrowers in rating \(j\) during the observation
+to rating \(j\) and \(Y_{i}(s)\) is the number of borrowers in rating
+\(i\) at time \(s\). And the integral: \(\int Y_{i}(s)ds\) is the total
+time spent by all borrowers in rating \(i\) during the observation
 period. The one-year migration matrix can then be obtained by
 exponentiating the generator matrix:
 \(W(\Delta t) = e^{\Lambda \cdot \Delta t} = \sum_{k=0}^{\infty} \frac{(\Lambda \cdot \Delta t)^k}{k!}\)
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{generator\_matrix }\OtherTok{\textless{}{-}} \FunctionTok{matrix}\NormalTok{(}\DecValTok{0}\NormalTok{, }\AttributeTok{nrow =} \FunctionTok{nrow}\NormalTok{(ratings) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{, }\AttributeTok{ncol =} \FunctionTok{nrow}\NormalTok{(ratings) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{)}
+\NormalTok{ratings\_order }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"AAA"}\NormalTok{, }\StringTok{"AA"}\NormalTok{, }\StringTok{"A"}\NormalTok{, }\StringTok{"BBB"}\NormalTok{, }\StringTok{"BB"}\NormalTok{, }\StringTok{"B"}\NormalTok{, }\StringTok{"CCC/C"}\NormalTok{, }\StringTok{"D"}\NormalTok{)}
+\NormalTok{K }\OtherTok{\textless{}{-}} \FunctionTok{length}\NormalTok{(ratings\_order)}
+
+\CommentTok{\# melt ratings to long format}
+\NormalTok{ratings\_long }\OtherTok{\textless{}{-}} \FunctionTok{melt}\NormalTok{(}
+\NormalTok{    ratings,}
+    \AttributeTok{id.vars =} \StringTok{"Obligor"}\NormalTok{,}
+    \AttributeTok{variable.name =} \StringTok{"date"}\NormalTok{,}
+    \AttributeTok{value.name =} \StringTok{"rating"}\NormalTok{,}
+    \AttributeTok{variable.factor =} \ConstantTok{FALSE}
+\NormalTok{)}
+
+\NormalTok{ratings\_long[, date }\SpecialCharTok{:=} \FunctionTok{as.Date}\NormalTok{(date)]}
+\NormalTok{ratings\_long[, rating }\SpecialCharTok{:=} \FunctionTok{factor}\NormalTok{(rating, }\AttributeTok{levels =}\NormalTok{ ratings\_order)]}
+
+
+\FunctionTok{setorder}\NormalTok{(ratings\_long, Obligor, date)}
+
+\FunctionTok{nrow}\NormalTok{(ratings\_long)}
 \end{Highlighting}
 \end{Shaded}
+
+\begin{verbatim}
+## [1] 130000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{class}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{date)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "Date"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{levels}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{rating)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "AAA"   "AA"    "A"     "BBB"   "BB"    "B"     "CCC/C" "D"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sum}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{rating))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{setdiff}\NormalTok{((}\FunctionTok{unique}\NormalTok{(}\FunctionTok{as.character}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{rating))), ratings\_order)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## character(0)
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(ratings\_long, }\DecValTok{10}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}rll@{}}
+\toprule\noalign{}
+Obligor & date & rating \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1 & 2024-12-31 & CCC/C \\
+1 & 2025-01-31 & CCC/C \\
+1 & 2025-02-28 & CCC/C \\
+1 & 2025-03-31 & B \\
+1 & 2025-04-30 & B \\
+1 & 2025-05-31 & B \\
+1 & 2025-06-30 & B \\
+1 & 2025-07-31 & B \\
+1 & 2025-08-31 & B \\
+1 & 2025-09-30 & B \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{ncol}\NormalTok{(ratings) }\SpecialCharTok{{-}} \DecValTok{1}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 13
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{head}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(ratings), }\DecValTok{25}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##  [1] "Obligor"    "2024-12-31" "2025-01-31" "2025-02-28" "2025-03-31"
+##  [6] "2025-04-30" "2025-05-31" "2025-06-30" "2025-07-31" "2025-08-31"
+## [11] "2025-09-30" "2025-10-31" "2025-11-30" "2025-12-31"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{range}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{date)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "2024-12-31" "2025-12-31"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{length}\NormalTok{(}\FunctionTok{unique}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{date))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 13
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# prev rating column}
+\NormalTok{ratings\_long[, prev\_rating }\SpecialCharTok{:=} \FunctionTok{shift}\NormalTok{(rating, }\AttributeTok{n =} \DecValTok{1}\DataTypeTok{L}\NormalTok{, }\AttributeTok{type =} \StringTok{"lag"}\NormalTok{), by }\OtherTok{=}\NormalTok{ Obligor]}
+
+\CommentTok{\# drop first rows of each obligot}
+\NormalTok{transitions }\OtherTok{\textless{}{-}}\NormalTok{ ratings\_long[}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(prev\_rating)]}
+
+
+\CommentTok{\# cross tabulate: rows = from, cols = to, it means how many times we observed a transition from rating i to rating j}
+\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{table}\NormalTok{(}\AttributeTok{from =}\NormalTok{ transitions}\SpecialCharTok{$}\NormalTok{prev\_rating, }\AttributeTok{to =}\NormalTok{ transitions}\SpecialCharTok{$}\NormalTok{rating)}
+
+\CommentTok{\# convert from table to matrix}
+\NormalTok{N }\OtherTok{\textless{}{-}} \FunctionTok{unclass}\NormalTok{(N)}
+\FunctionTok{storage.mode}\NormalTok{(N) }\OtherTok{\textless{}{-}} \StringTok{"double"}
+
+
+\FunctionTok{dim}\NormalTok{(N)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 8 8
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{rownames}\NormalTok{(N)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "AAA"   "AA"    "A"     "BBB"   "BB"    "B"     "CCC/C" "D"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{colnames}\NormalTok{(N)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] "AAA"   "AA"    "A"     "BBB"   "BB"    "B"     "CCC/C" "D"
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sum}\NormalTok{(N)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 120000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{diag}\NormalTok{(N) }\SpecialCharTok{/} \FunctionTok{rowSums}\NormalTok{(N)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       AAA        AA         A       BBB        BB         B     CCC/C         D 
+## 0.9927156 0.9910590 0.9931906 0.9906120 0.9868227 0.9849699 0.9597836 1.0000000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{N[}\StringTok{"D"}\NormalTok{,]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   AAA    AA     A   BBB    BB     B CCC/C     D 
+##     0     0     0     0     0     0     0  1497
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{N}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        to
+## from     AAA    AA     A   BBB    BB     B CCC/C    D
+##   AAA   5860    37     4     1     1     0     0    0
+##   AA       7 11417    85    11     0     0     0    0
+##   A        1    39 23191   104     6     4     1    4
+##   BBB      1    11   120 35982   164    28     7   10
+##   BB       2     0     5   102 23440   163    22   19
+##   B        0     0     1     2    52 11927    62   65
+##   CCC/C    0     0     4     6     7    45  5322  161
+##   D        0     0     0     0     0     0     0 1497
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# exact days between ratings}
+\NormalTok{ratings\_long[, prev\_date }\SpecialCharTok{:=} \FunctionTok{shift}\NormalTok{(date, }\AttributeTok{n =} \DecValTok{1}\DataTypeTok{L}\NormalTok{, }\AttributeTok{type =} \StringTok{"lag"}\NormalTok{), by }\OtherTok{=}\NormalTok{ Obligor]}
+\NormalTok{ratings\_long[, dt }\SpecialCharTok{:=} \FunctionTok{as.numeric}\NormalTok{((date }\SpecialCharTok{{-}}\NormalTok{ prev\_date) }\SpecialCharTok{/} \FloatTok{365.25}\NormalTok{)]}
+
+\CommentTok{\# tapply to apply sum to dt by prev\_rating, so we get the total time spent in each rating category}
+\CommentTok{\# tapply arguments: 1) the vector to apply the function to, 2) the factor to group by, 3) the function to apply, 4) na.rm = TRUE to ignore NA values}
+\NormalTok{Y }\OtherTok{\textless{}{-}} \FunctionTok{tapply}\NormalTok{(ratings\_long}\SpecialCharTok{$}\NormalTok{dt, ratings\_long}\SpecialCharTok{$}\NormalTok{prev\_rating, sum, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+
+\NormalTok{Y }\OtherTok{\textless{}{-}}\NormalTok{ Y[ratings\_order] }\CommentTok{\# reorder Y according to ratings\_order}
+
+
+\NormalTok{Y }\CommentTok{\# total time spent in each rating category}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       AAA        AA         A       BBB        BB         B     CCC/C         D 
+##  491.4935  959.3292 1944.6434 3024.5667 1977.8426 1008.5394  461.5140  125.2266
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{length}\NormalTok{(Y) }\CommentTok{\# number of rating categories}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 8
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sum}\NormalTok{(Y) }\CommentTok{\# total time spent in all rating categories}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 9993.155
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Y }\SpecialCharTok{/} \FunctionTok{sum}\NormalTok{(Y) }\CommentTok{\# proportion of time spent in each rating category}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        AAA         AA          A        BBB         BB          B      CCC/C 
+## 0.04918301 0.09599863 0.19459753 0.30266384 0.19791973 0.10092301 0.04618301 
+##          D 
+## 0.01253123
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# check: total time spent in all ratings should be equal to the total time between the first and last rating for all obligors}
+\FunctionTok{cbind}\NormalTok{(}\AttributeTok{N\_rowsum =} \FunctionTok{rowSums}\NormalTok{(N), }\AttributeTok{Y\_times\_12 =}\NormalTok{ Y }\SpecialCharTok{*} \DecValTok{12}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       N_rowsum Y_times_12
+## AAA       5903   5897.922
+## AA       11520  11511.951
+## A        23350  23335.721
+## BBB      36323  36294.801
+## BB       23753  23734.111
+## B        12109  12102.472
+## CCC/C     5545   5538.168
+## D         1497   1502.719
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# off diagonal elements of the generator matrix, divide the number of transitions by the total time spent in the rating category}
+\NormalTok{Lambda }\OtherTok{\textless{}{-}} \FunctionTok{sweep}\NormalTok{(N, }\AttributeTok{MARGIN =} \DecValTok{1}\NormalTok{, }\AttributeTok{STATS =}\NormalTok{ Y, }\AttributeTok{FUN =} \StringTok{"/"}\NormalTok{)}
+
+\FunctionTok{diag}\NormalTok{(Lambda) }\OtherTok{\textless{}{-}} \DecValTok{0}
+
+\FunctionTok{diag}\NormalTok{(Lambda) }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\FunctionTok{rowSums}\NormalTok{(Lambda)}
+
+\FunctionTok{rowSums}\NormalTok{(Lambda)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##           AAA            AA             A           BBB            BB 
+##  8.673617e-18 -1.734723e-18  9.540979e-18  1.084202e-17 -3.469447e-18 
+##             B         CCC/C             D 
+##  0.000000e+00  0.000000e+00  0.000000e+00
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{all}\NormalTok{(}\FunctionTok{abs}\NormalTok{(}\FunctionTok{rowSums}\NormalTok{(Lambda)) }\SpecialCharTok{\textless{}} \FloatTok{1e{-}10}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{all}\NormalTok{(Lambda[}\FunctionTok{row}\NormalTok{(Lambda) }\SpecialCharTok{!=} \FunctionTok{col}\NormalTok{(Lambda)] }\SpecialCharTok{\textgreater{}=} \DecValTok{0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{all}\NormalTok{(}\FunctionTok{diag}\NormalTok{(Lambda) }\SpecialCharTok{\textless{}=} \DecValTok{0}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] TRUE
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Lambda[}\StringTok{"D"}\NormalTok{,]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   AAA    AA     A   BBB    BB     B CCC/C     D 
+##     0     0     0     0     0     0     0     0
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{expm\_taylor }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(M, k\_max) \{}
+
+\NormalTok{    K }\OtherTok{\textless{}{-}} \FunctionTok{nrow}\NormalTok{(M)}
+\NormalTok{    P }\OtherTok{\textless{}{-}} \FunctionTok{diag}\NormalTok{(K)}
+\NormalTok{    term }\OtherTok{\textless{}{-}} \FunctionTok{diag}\NormalTok{(K)}
+    \ControlFlowTok{for}\NormalTok{ (k }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{k\_max) \{}
+\NormalTok{        term }\OtherTok{\textless{}{-}}\NormalTok{ (term }\SpecialCharTok{\%*\%}\NormalTok{ M) }\SpecialCharTok{/}\NormalTok{ k}
+\NormalTok{        P }\OtherTok{\textless{}{-}}\NormalTok{ P }\SpecialCharTok{+}\NormalTok{ term}
+\NormalTok{    \}}
+    \FunctionTok{dimnames}\NormalTok{(P) }\OtherTok{\textless{}{-}} \FunctionTok{dimnames}\NormalTok{(M)}
+\NormalTok{    P}
+\NormalTok{\}}
+
+\NormalTok{P5 }\OtherTok{\textless{}{-}}  \FunctionTok{expm\_taylor}\NormalTok{(Lambda, }\AttributeTok{k\_max =} \DecValTok{5}\NormalTok{)}
+\NormalTok{P20 }\OtherTok{\textless{}{-}} \FunctionTok{expm\_taylor}\NormalTok{(Lambda, }\AttributeTok{k\_max =} \DecValTok{20}\NormalTok{)}
+
+
+\FunctionTok{rowSums}\NormalTok{(P5)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   AAA    AA     A   BBB    BB     B CCC/C     D 
+##     1     1     1     1     1     1     1     1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{rowSums}\NormalTok{(P20)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   AAA    AA     A   BBB    BB     B CCC/C     D 
+##     1     1     1     1     1     1     1     1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(}\FunctionTok{rowSums}\NormalTok{(P20) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 4.440892e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{range}\NormalTok{(P5)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{range}\NormalTok{(P20)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{P20[}\StringTok{"D"}\NormalTok{,]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   AAA    AA     A   BBB    BB     B CCC/C     D 
+##     0     0     0     0     0     0     0     1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(P5 }\SpecialCharTok{{-}}\NormalTok{ P20))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1.955294e-05
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{PD\_raw }\OtherTok{\textless{}{-}}\NormalTok{ P20[, }\StringTok{"D"}\NormalTok{]}
+
+\NormalTok{PD }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(PD\_raw, }\FloatTok{0.0005}\NormalTok{) }\CommentTok{\# set a floor for PD to avoid zero probabilities}
+\FunctionTok{data.frame}\NormalTok{(}\AttributeTok{rating =} \FunctionTok{names}\NormalTok{(PD), PD\_raw, PD)}
+\end{Highlighting}
+\end{Shaded}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}llrr@{}}
+\toprule\noalign{}
+& rating & PD\_raw & PD \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+AAA & AAA & 0.0000271 & 0.0005000 \\
+AA & AA & 0.0001145 & 0.0005000 \\
+A & A & 0.0022365 & 0.0022365 \\
+BBB & BBB & 0.0041178 & 0.0041178 \\
+BB & BB & 0.0131906 & 0.0131906 \\
+B & B & 0.0679631 & 0.0679631 \\
+CCC/C & CCC/C & 0.2795639 & 0.2795639 \\
+D & D & 1.0000000 & 1.0000000 \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{round}\NormalTok{(P20, }\DecValTok{6}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        to
+## from         AAA       AA        A      BBB       BB        B    CCC/C        D
+##   AAA   0.916483 0.068399 0.010571 0.002532 0.001877 0.000095 0.000015 0.000027
+##   AA    0.006645 0.899273 0.080905 0.012437 0.000444 0.000147 0.000035 0.000114
+##   A     0.000550 0.018366 0.923286 0.048762 0.004089 0.002196 0.000515 0.002237
+##   BBB   0.000346 0.003634 0.036263 0.895622 0.047708 0.010075 0.002234 0.004118
+##   BB    0.000904 0.000146 0.003246 0.045310 0.856744 0.070349 0.010110 0.013191
+##   B     0.000024 0.000017 0.001193 0.003208 0.044031 0.838978 0.044586 0.067963
+##   CCC/C 0.000011 0.000091 0.006858 0.010327 0.013291 0.070906 0.618952 0.279564
+##   D     0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 0.000000 1.000000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pacman}\SpecialCharTok{::}\FunctionTok{p\_load}\NormalTok{(expm)}
+\NormalTok{P\_expm }\OtherTok{\textless{}{-}}\NormalTok{ expm}\SpecialCharTok{::}\FunctionTok{expm}\NormalTok{(Lambda)}
+\FunctionTok{max}\NormalTok{(}\FunctionTok{abs}\NormalTok{(P\_expm }\SpecialCharTok{{-}}\NormalTok{ P20))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 2.220446e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{PD\_raw }\OtherTok{\textless{}{-}}\NormalTok{ P20[, }\StringTok{"D"}\NormalTok{]}
+\NormalTok{PD }\OtherTok{\textless{}{-}} \FunctionTok{pmax}\NormalTok{(PD\_raw, }\FloatTok{0.0005}\NormalTok{) }\CommentTok{\# set a floor for}
+
+\FunctionTok{data.frame}\NormalTok{(}
+    \AttributeTok{rating =} \FunctionTok{names}\NormalTok{(PD),}
+    \AttributeTok{PD\_raw =} \FunctionTok{round}\NormalTok{(PD\_raw, }\DecValTok{6}\NormalTok{),}
+    \AttributeTok{PD =} \FunctionTok{round}\NormalTok{(PD, }\DecValTok{6}\NormalTok{),}
+    \AttributeTok{floored =}\NormalTok{ PD\_raw }\SpecialCharTok{\textless{}} \FloatTok{0.0005}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}llrrl@{}}
+\toprule\noalign{}
+& rating & PD\_raw & PD & floored \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+AAA & AAA & 0.000027 & 0.000500 & TRUE \\
+AA & AA & 0.000114 & 0.000500 & TRUE \\
+A & A & 0.002237 & 0.002237 & FALSE \\
+BBB & BBB & 0.004118 & 0.004118 & FALSE \\
+BB & BB & 0.013191 & 0.013191 & FALSE \\
+B & B & 0.067963 & 0.067963 & FALSE \\
+CCC/C & CCC/C & 0.279564 & 0.279564 & FALSE \\
+D & D & 1.000000 & 1.000000 & FALSE \\
+\end{longtable}
+}
 
 \section{\texorpdfstring{\textbf{Task}}{Task}}\label{task-1}
 
@@ -555,5 +1110,179 @@ exponentiating the generator matrix:
 Determine the credit risk for the portfolio of 100 borrowers based on
 the Basel Standardized Approach. Proceed by using the existing ratings
 as if they were external ratings.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{str}\NormalTok{(portfolio)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Classes 'data.table' and 'data.frame':   100 obs. of  4 variables:
+##  $ Obligor    : num  1 2 3 4 5 6 7 8 9 10 ...
+##  $ Rating     : chr  "BBB" "BB" "BB" "BB" ...
+##  $ Industry   : num  1 3 2 2 1 1 1 3 3 3 ...
+##  $ Loan.Volume: num  169000 149000 850000 76000 174000 108000 122000 33000 22000 38000 ...
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{portfolio[, .N, by }\OtherTok{=}\NormalTok{ Rating][}\FunctionTok{order}\NormalTok{(}\SpecialCharTok{{-}}\NormalTok{N)]}
+\end{Highlighting}
+\end{Shaded}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lr@{}}
+\toprule\noalign{}
+Rating & N \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+BBB & 30 \\
+BB & 27 \\
+A & 17 \\
+B & 9 \\
+AA & 8 \\
+CCC/C & 6 \\
+AAA & 3 \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sum}\NormalTok{(portfolio}\SpecialCharTok{$}\NormalTok{Loan.Volume)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 16576000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{range}\NormalTok{(portfolio}\SpecialCharTok{$}\NormalTok{Loan.Volume)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]  21000 850000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{portfolio[, .N, by }\OtherTok{=}\NormalTok{ Industry]}
+\end{Highlighting}
+\end{Shaded}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}rr@{}}
+\toprule\noalign{}
+Industry & N \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1 & 42 \\
+3 & 29 \\
+2 & 29 \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{rw\_table }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}
+    \AttributeTok{Rating =} \FunctionTok{c}\NormalTok{(}\StringTok{"AAA"}\NormalTok{, }\StringTok{"AA"}\NormalTok{, }\StringTok{"A"}\NormalTok{, }\StringTok{"BBB"}\NormalTok{, }\StringTok{"BB"}\NormalTok{, }\StringTok{"B"}\NormalTok{, }\StringTok{"CCC/C"}\NormalTok{, }\StringTok{"D"}\NormalTok{),}
+    \AttributeTok{RW =} \FunctionTok{c}\NormalTok{(}\FloatTok{0.20}\NormalTok{, }\FloatTok{0.20}\NormalTok{, }\FloatTok{0.50}\NormalTok{, }\FloatTok{1.00}\NormalTok{, }\FloatTok{1.00}\NormalTok{, }\FloatTok{1.50}\NormalTok{, }\FloatTok{1.50}\NormalTok{, }\FloatTok{1.50}\NormalTok{)}
+\NormalTok{)}
+
+\NormalTok{port\_sa }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(portfolio, rw\_table, }\AttributeTok{by =} \StringTok{"Rating"}\NormalTok{, }\AttributeTok{all.x =} \ConstantTok{TRUE}\NormalTok{)}
+
+\NormalTok{port\_sa[, RWA }\SpecialCharTok{:=}\NormalTok{ Loan.Volume }\SpecialCharTok{*}\NormalTok{ RW]}
+
+\FunctionTok{head}\NormalTok{(port\_sa)}
+\end{Highlighting}
+\end{Shaded}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lrrrrr@{}}
+\toprule\noalign{}
+Rating & Obligor & Industry & Loan.Volume & RW & RWA \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+A & 7 & 1 & 122000 & 0.5 & 61000 \\
+A & 8 & 3 & 33000 & 0.5 & 16500 \\
+A & 13 & 3 & 850000 & 0.5 & 425000 \\
+A & 18 & 1 & 191000 & 0.5 & 95500 \\
+A & 23 & 1 & 850000 & 0.5 & 425000 \\
+A & 24 & 1 & 198000 & 0.5 & 99000 \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{total\_EAD }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{Loan.Volume)}
+\NormalTok{total\_RWA }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{RWA)}
+\NormalTok{capital\_req\_SA }\OtherTok{\textless{}{-}} \FloatTok{0.08} \SpecialCharTok{*}\NormalTok{ total\_RWA}
+
+\NormalTok{port\_sa[, .(}
+    \AttributeTok{N =}\NormalTok{ .N,}
+    \AttributeTok{EAD =} \FunctionTok{sum}\NormalTok{(Loan.Volume),}
+    \AttributeTok{RW =} \FunctionTok{unique}\NormalTok{(RW),}
+    \AttributeTok{RWA =} \FunctionTok{sum}\NormalTok{(RWA),}
+    \AttributeTok{Capital =} \FloatTok{0.08} \SpecialCharTok{*} \FunctionTok{sum}\NormalTok{(RWA)}
+\NormalTok{), by }\OtherTok{=}\NormalTok{ Rating][}\FunctionTok{order}\NormalTok{(Rating)]}
+\end{Highlighting}
+\end{Shaded}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}lrrrrr@{}}
+\toprule\noalign{}
+Rating & N & EAD & RW & RWA & Capital \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+A & 17 & 3430000 & 0.5 & 1715000 & 137200 \\
+AA & 8 & 1410000 & 0.2 & 282000 & 22560 \\
+AAA & 3 & 279000 & 0.2 & 55800 & 4464 \\
+B & 9 & 887000 & 1.5 & 1330500 & 106440 \\
+BB & 27 & 4428000 & 1.0 & 4428000 & 354240 \\
+BBB & 30 & 4821000 & 1.0 & 4821000 & 385680 \\
+CCC/C & 6 & 1321000 & 1.5 & 1981500 & 158520 \\
+\end{longtable}
+}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{sum}\NormalTok{(}\SpecialCharTok{!}\FunctionTok{is.na}\NormalTok{(port\_sa}\SpecialCharTok{$}\NormalTok{RW))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 100
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{total\_RWA }\SpecialCharTok{/}\NormalTok{ total\_EAD}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.881624
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{capital\_req\_SA }\SpecialCharTok{/}\NormalTok{ total\_EAD}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.07052992
+\end{verbatim}
 
 \end{document}

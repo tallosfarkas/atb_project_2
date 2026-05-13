@@ -95,21 +95,180 @@ migration matrix based on the Lando and Skodeberg procedure. In doing so, determ
 migration matrix using the generator matrix based on at least the first five terms.
 
 Estimation of the generator matrix come from this formula: 
-$$\lambda_{ij} = \frac{N_{ij}}{\int Y_{j}(s)ds} i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}$$
-
-where $N_{ij}$ is the number of observed migrations from rating $i$ to rating $j$ and $Y_{j}(s)$ is the number of borrowers in rating $j$ at time $s$. And the integral: $\int Y_{j}(s)ds$ is the total time spent by all borrowers in rating $j$ during the observation period.
+$$\lambda_{ij} = \frac{N_{ij}}{\int Y_{i}(s)ds} \qquad i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}$$
+    
+where $N_{ij}$ is the number of observed migrations from rating $i$ to rating $j$ and $Y_{i}(s)$ is the number of borrowers in rating $i$ at time $s$. And the integral: $\int Y_{i}(s)ds$ is the total time spent by all borrowers in rating $i$ during the observation period.
 The one-year migration matrix can then be obtained by exponentiating the generator matrix: $W(\Delta t) = e^{\Lambda \cdot \Delta t} = \sum_{k=0}^{\infty} \frac{(\Lambda \cdot \Delta t)^k}{k!}$
 
 ```{r, include=TRUE}
 
-generator_matrix <- matrix(0, nrow = nrow(ratings) - 1, ncol = nrow(ratings) - 1)
+ratings_order <- c("AAA", "AA", "A", "BBB", "BB", "B", "CCC/C", "D")
+K <- length(ratings_order)
 
+# melt ratings to long format
+ratings_long <- melt(
+    ratings,
+    id.vars = "Obligor",
+    variable.name = "date",
+    value.name = "rating",
+    variable.factor = FALSE
+)
+
+ratings_long[, date := as.Date(date)]
+ratings_long[, rating := factor(rating, levels = ratings_order)]
+
+
+setorder(ratings_long, Obligor, date)
+
+nrow(ratings_long)
+class(ratings_long$date)
+levels(ratings_long$rating)
+
+sum(is.na(ratings_long$rating))
+setdiff((unique(as.character(ratings_long$rating))), ratings_order)
+
+head(ratings_long, 10)
+
+
+
+
+ncol(ratings) - 1
+
+head(colnames(ratings), 25)
+range(ratings_long$date)
+length(unique(ratings_long$date))
+
+
+
+# prev rating column
+ratings_long[, prev_rating := shift(rating, n = 1L, type = "lag"), by = Obligor]
+
+# drop first rows of each obligot
+transitions <- ratings_long[!is.na(prev_rating)]
+
+
+# cross tabulate: rows = from, cols = to, it means how many times we observed a transition from rating i to rating j
+N <- table(from = transitions$prev_rating, to = transitions$rating)
+
+# convert from table to matrix
+N <- unclass(N)
+storage.mode(N) <- "double"
+
+
+dim(N)
+rownames(N)
+colnames(N)
+
+sum(N)
+
+diag(N) / rowSums(N)
+
+N["D",]
+
+N
+
+
+```
+
+```{r, include=TRUE}
+
+# exact days between ratings
+ratings_long[, prev_date := shift(date, n = 1L, type = "lag"), by = Obligor]
+ratings_long[, dt := as.numeric((date - prev_date) / 365.25)]
+
+# tapply to apply sum to dt by prev_rating, so we get the total time spent in each rating category
+# tapply arguments: 1) the vector to apply the function to, 2) the factor to group by, 3) the function to apply, 4) na.rm = TRUE to ignore NA values
+Y <- tapply(ratings_long$dt, ratings_long$prev_rating, sum, na.rm = TRUE)
+
+Y <- Y[ratings_order] # reorder Y according to ratings_order
+
+
+Y # total time spent in each rating category
+length(Y) # number of rating categories
+sum(Y) # total time spent in all rating categories
+Y / sum(Y) # proportion of time spent in each rating category
+# check: total time spent in all ratings should be equal to the total time between the first and last rating for all obligors
+cbind(N_rowsum = rowSums(N), Y_times_12 = Y * 12)
+
+# off diagonal elements of the generator matrix, divide the number of transitions by the total time spent in the rating category
+Lambda <- sweep(N, MARGIN = 1, STATS = Y, FUN = "/")
+
+diag(Lambda) <- 0
+
+diag(Lambda) <- -rowSums(Lambda)
+
+rowSums(Lambda)
+all(abs(rowSums(Lambda)) < 1e-10)
+
+all(Lambda[row(Lambda) != col(Lambda)] >= 0)
+
+all(diag(Lambda) <= 0)
+
+Lambda["D",]
+
+```
+
+```{r, include=TRUE}
+
+expm_taylor <- function(M, k_max) {
+
+    K <- nrow(M)
+    P <- diag(K)
+    term <- diag(K)
+    for (k in 1:k_max) {
+        term <- (term %*% M) / k
+        P <- P + term
+    }
+    dimnames(P) <- dimnames(M)
+    P
+}
+
+P5 <-  expm_taylor(Lambda, k_max = 5)
+P20 <- expm_taylor(Lambda, k_max = 20)
+
+
+rowSums(P5)
+rowSums(P20)
+max(abs(rowSums(P20) - 1))
+
+range(P5)
+range(P20)
+
+P20["D",]
+
+max(abs(P5 - P20))
+
+PD_raw <- P20[, "D"]
+
+PD <- pmax(PD_raw, 0.0005) # set a floor for PD to avoid zero probabilities
+data.frame(rating = names(PD), PD_raw, PD)
+
+```
+
+```{r, include=TRUE}
+
+round(P20, 6)
+
+pacman::p_load(expm)
+P_expm <- expm::expm(Lambda)
+max(abs(P_expm - P20))
+
+PD_raw <- P20[, "D"]
+PD <- pmax(PD_raw, 0.0005) # set a floor for
+
+data.frame(
+    rating = names(PD),
+    PD_raw = round(PD_raw, 6),
+    PD = round(PD, 6),
+    floored = PD_raw < 0.0005
+)
 
 
 
 
 
 ```
+
 
 
 # **Task**
@@ -119,10 +278,41 @@ Determine the credit risk for the portfolio of 100 borrowers based on the Basel
 Standardized Approach. Proceed by using the existing ratings as if they were external ratings.
 
 ```{r, include=TRUE}
+str(portfolio)
+portfolio[, .N, by = Rating][order(-N)]
+
+sum(portfolio$Loan.Volume)
+range(portfolio$Loan.Volume)
+portfolio[, .N, by = Industry]
+
+rw_table <- data.table(
+    Rating = c("AAA", "AA", "A", "BBB", "BB", "B", "CCC/C", "D"),
+    RW = c(0.20, 0.20, 0.50, 1.00, 1.00, 1.50, 1.50, 1.50)
+)
+
+port_sa <- merge(portfolio, rw_table, by = "Rating", all.x = TRUE)
+
+port_sa[, RWA := Loan.Volume * RW]
+
+head(port_sa)
+
+total_EAD <- sum(port_sa$Loan.Volume)
+total_RWA <- sum(port_sa$RWA)
+capital_req_SA <- 0.08 * total_RWA
+
+port_sa[, .(
+    N = .N,
+    EAD = sum(Loan.Volume),
+    RW = unique(RW),
+    RWA = sum(RWA),
+    Capital = 0.08 * sum(RWA)
+), by = Rating][order(Rating)]
 
 
+sum(!is.na(port_sa$RW))
 
+total_RWA / total_EAD
 
-
+capital_req_SA / total_EAD
 
 ```
