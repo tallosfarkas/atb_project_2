@@ -40,18 +40,18 @@ header-includes:
   - \AtBeginDocument{\hypersetup{colorlinks=true, linkcolor=bawagblue, urlcolor=bawagblue, citecolor=bawagblue}}
 ---
 
-```{r setup, include=TRUE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-    echo = TRUE, 
-    warning = FALSE,
-    message = FALSE,
-    fig.width = 7,
+    echo       = TRUE,
+    warning    = FALSE,
+    message    = FALSE,
+    fig.width  = 7,
     fig.height = 5,
-    fig.pos = "H",
-    out.width = "100%"
+    fig.pos    = "H",
+    out.width  = "100%"
 )
 
-if(!require("pacman")) install.packages("pacman")
+if (!require("pacman")) install.packages("pacman")
 
 pacman::p_load(
     data.table,
@@ -60,259 +60,658 @@ pacman::p_load(
     kableExtra,
     ggplot2,
     openxlsx,
-    dplyr
+    scales,
+    expm
 )
 
-BASE <- "data/"
+# Portable data path. Defaults to ./data/ relative to this Rmd; override via
+# Sys.setenv(ATB_PROJECT_2_BASE = "/some/other/path") before knitting if needed.
+BASE      <- Sys.getenv("ATB_PROJECT_2_BASE", unset = "")
+DATA_FILE <- if (nzchar(BASE)) {
+    file.path(BASE, "data", "Data_Group_4.xlsx")
+} else {
+    "data/Data_Group_4.xlsx"
+}
 
+ratings   <- read.xlsx(DATA_FILE, sheet = "Ratings")
+portfolio <- read.xlsx(DATA_FILE, sheet = "Portfolio")
 
-ratings <- read.xlsx(paste0(BASE, "Data_Group_4.xlsx"), sheet = "Ratings")
-portfolio <- read.xlsx(paste0(BASE, "Data_Group_4.xlsx"), sheet = "Portfolio")
+setDT(ratings)
+setDT(portfolio)
 
-
-lapply(list(ratings, portfolio), setDT)
-lapply(list(ratings, portfolio), str)
-lapply(list(ratings, portfolio), head)
-lapply(list(ratings, portfolio), summary)
-
-nrow(ratings)
-nrow(portfolio)
-print(colnames(ratings))
-print(colnames(portfolio))
-
-# Correctly parse the dots and format to dashes
-colnames(ratings)[-1] <- format(as.Date(colnames(ratings)[-1], format = "%Y.%m.%d"), "%Y-%m-%d")
-print(colnames(ratings))
-
+# Excel date headers may arrive as dotted strings ("2024.12.31") or numeric
+# serials ("45657"), depending on the openxlsx version. Handle both.
+parse_date_col <- function(x) {
+    d <- as.Date(x, format = "%Y.%m.%d")
+    if (anyNA(d)) {
+        d <- as.Date(suppressWarnings(as.numeric(x)), origin = "1899-12-30")
+    }
+    d
+}
+colnames(ratings)[-1] <- format(parse_date_col(colnames(ratings)[-1]), "%Y-%m-%d")
 ```
 
-# **Task**
+# Task 1 --- One-Year Migration Matrix (Lando--Skodeberg)
 
+*Author: Farkas Tallos*
 
-##
-Based on the rating history of 10,000 representative borrowers, determine the one-year
-migration matrix based on the Lando and Skodeberg procedure. In doing so, determine the 
-migration matrix using the generator matrix based on at least the first five terms.
+## Case-Study Task
 
-Estimation of the generator matrix come from this formula: 
-$$\lambda_{ij} = \frac{N_{ij}}{\int Y_{i}(s)ds} \qquad i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}$$
-    
-where $N_{ij}$ is the number of observed migrations from rating $i$ to rating $j$ and $Y_{i}(s)$ is the number of borrowers in rating $i$ at time $s$. And the integral: $\int Y_{i}(s)ds$ is the total time spent by all borrowers in rating $i$ during the observation period.
-The one-year migration matrix can then be obtained by exponentiating the generator matrix: $W(\Delta t) = e^{\Lambda \cdot \Delta t} = \sum_{k=0}^{\infty} \frac{(\Lambda \cdot \Delta t)^k}{k!}$
+Based on the rating history of 10,000 representative borrowers, determine the
+one-year migration matrix based on the Lando and Skodeberg procedure. Determine
+the migration matrix using the generator matrix based on at least the first
+five terms of the matrix exponential.
 
-```{r, include=TRUE}
+## Methodology
 
+The Lando--Skodeberg [2002] estimator models rating dynamics as a
+time-homogeneous Markov chain in continuous time. The generator matrix
+$\Lambda$ collects the instantaneous transition intensities. Its
+maximum-likelihood estimator, given the full rating history of all obligors,
+is
+
+$$
+\hat\lambda_{ij} \;=\; \frac{N_{ij}}{\int_0^T Y_i(s)\,ds}\,,\quad i \neq j,
+\qquad
+\hat\lambda_{ii} \;=\; -\sum_{j \neq i} \hat\lambda_{ij},
+$$
+
+where $N_{ij}$ is the observed number of migrations from rating $i$ to rating
+$j$ during the window $[0, T]$, and $Y_i(s)$ is the number of obligors in
+state $i$ at time $s$, so the denominator is the total obligor-time spent in
+the from-state (slide p.126 of `docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf`).
+The one-year migration matrix is then obtained by exponentiating the
+generator,
+
+$$
+P(\Delta t) \;=\; e^{\Lambda \cdot \Delta t} \;=\; \sum_{k=0}^{\infty}
+\frac{(\Lambda \cdot \Delta t)^k}{k!},
+$$
+
+which we evaluate via a truncated Taylor expansion (slide p.132). Default
+is modelled as an absorbing state, so the row of $\Lambda$ corresponding to
+$\mathrm{D}$ is identically zero.
+
+## State Space and Long-Format Transitions
+
+The 8-state rating universe used in this report is ordered from highest
+quality to default, matching the lecture convention:
+
+```{r task1-states-long}
 ratings_order <- c("AAA", "AA", "A", "BBB", "BB", "B", "CCC/C", "D")
 K <- length(ratings_order)
 
-# melt ratings to long format
+# Wide -> long: one row per (Obligor, snapshot date, rating).
 ratings_long <- melt(
     ratings,
-    id.vars = "Obligor",
-    variable.name = "date",
-    value.name = "rating",
+    id.vars         = "Obligor",
+    variable.name   = "date",
+    value.name      = "rating",
     variable.factor = FALSE
 )
-
-ratings_long[, date := as.Date(date)]
+ratings_long[, date   := as.Date(date)]
 ratings_long[, rating := factor(rating, levels = ratings_order)]
-
-
 setorder(ratings_long, Obligor, date)
 
-nrow(ratings_long)
-class(ratings_long$date)
-levels(ratings_long$rating)
-
-sum(is.na(ratings_long$rating))
-setdiff((unique(as.character(ratings_long$rating))), ratings_order)
-
-head(ratings_long, 10)
-
-
-
-
-ncol(ratings) - 1
-
-head(colnames(ratings), 25)
-range(ratings_long$date)
-length(unique(ratings_long$date))
-
-
-
-# prev rating column
-ratings_long[, prev_rating := shift(rating, n = 1L, type = "lag"), by = Obligor]
-
-# drop first rows of each obligot
+# Add the previous-month rating within each obligor; the first row of each
+# obligor receives NA because no prior snapshot exists.
+ratings_long[, prev_rating := shift(rating, n = 1L, type = "lag"),
+             by = Obligor]
 transitions <- ratings_long[!is.na(prev_rating)]
-
-
-# cross tabulate: rows = from, cols = to, it means how many times we observed a transition from rating i to rating j
-N <- table(from = transitions$prev_rating, to = transitions$rating)
-
-# convert from table to matrix
-N <- unclass(N)
-storage.mode(N) <- "double"
-
-
-dim(N)
-rownames(N)
-colnames(N)
-
-sum(N)
-
-diag(N) / rowSums(N)
-
-N["D",]
-
-N
-
-
 ```
 
-```{r, include=TRUE}
+```{r task1-preview, echo=FALSE}
+kable(
+    head(transitions[, .(Obligor, date, prev_rating, rating)], 5),
+    booktabs = TRUE,
+    caption  = "Sample of obligor transitions (first five rows of the long table)."
+) |> kable_styling(latex_options = c("hold_position"))
+```
 
-# exact days between ratings
-ratings_long[, prev_date := shift(date, n = 1L, type = "lag"), by = Obligor]
-ratings_long[, dt := as.numeric((date - prev_date) / 365.25)]
+Reshaping from wide to long yields one row per obligor-snapshot observation,
+and lagging within `Obligor` produces the `(prev_rating -> rating)` pairs that
+feed the migration count. Pairs where `prev_rating` is `NA` (the first
+observation of each obligor) carry no transition information and are dropped.
+The data span 13 monthly snapshots from 2024-12-31 to 2025-12-31, giving 12
+transitions per obligor and a total of $10{,}000 \times 12 = 120{,}000$
+transition pairs.
 
-# tapply to apply sum to dt by prev_rating, so we get the total time spent in each rating category
-# tapply arguments: 1) the vector to apply the function to, 2) the factor to group by, 3) the function to apply, 4) na.rm = TRUE to ignore NA values
-Y <- tapply(ratings_long$dt, ratings_long$prev_rating, sum, na.rm = TRUE)
+## Migration Counts $N_{ij}$
 
-Y <- Y[ratings_order] # reorder Y according to ratings_order
+```{r task1-N}
+N <- unclass(table(from = transitions$prev_rating,
+                   to   = transitions$rating))
+storage.mode(N) <- "double"
+```
 
+```{r task1-N-table, echo=FALSE}
+kable(
+    N,
+    booktabs = TRUE,
+    caption  = "Migration count matrix $N_{ij}$: observed transitions from row-rating to column-rating.",
+    format.args = list(big.mark = ",")
+) |> kable_styling(latex_options = c("hold_position", "scale_down"))
+```
 
-Y # total time spent in each rating category
-length(Y) # number of rating categories
-sum(Y) # total time spent in all rating categories
-Y / sum(Y) # proportion of time spent in each rating category
-# check: total time spent in all ratings should be equal to the total time between the first and last rating for all obligors
-cbind(N_rowsum = rowSums(N), Y_times_12 = Y * 12)
+The count matrix is strongly diagonal-dominant: obligors are far more likely
+to stay in their current rating than to migrate. Off-diagonal mass
+concentrates immediately adjacent to the diagonal --- single-notch moves
+dominate two-notch moves --- consistent with the rating-momentum literature.
+The bottom row is identically zero off the diagonal because default is
+absorbing in this state space, so no transitions originate from $\mathrm{D}$.
+The first few new defaults (4 from A, 10 from BBB, 19 from BB, 65 from B,
+161 from CCC/C) are visible in the last column and rise monotonically with
+risk, which is the qualitative behaviour the IRB and simulation calibrations
+will inherit.
 
-# off diagonal elements of the generator matrix, divide the number of transitions by the total time spent in the rating category
+## Time in State $Y_i$
+
+```{r task1-Y}
+# Add previous snapshot date alongside previous rating, then compute the
+# length of each interval (in years) for the from-state's account.
+ratings_long[, prev_date := shift(date, n = 1L, type = "lag"),
+             by = Obligor]
+ratings_long[, dt := as.numeric(date - prev_date) / 365.25]
+
+Y <- tapply(ratings_long$dt, ratings_long$prev_rating,
+            sum, na.rm = TRUE)
+Y <- Y[ratings_order]
+```
+
+```{r task1-Y-table, echo=FALSE}
+kable(
+    data.table(Rating = names(Y),
+               `Obligor-years` = round(as.numeric(Y), 2)),
+    booktabs = TRUE,
+    caption  = "Total time spent by all obligors in each rating $i$ (obligor-years)."
+) |> kable_styling(latex_options = c("hold_position"))
+```
+
+Each obligor contributes the year-fraction between consecutive snapshots to
+the rating it occupied at the start of that interval. Summing across
+obligors gives the denominator of the Lando--Skodeberg estimator. The
+exposure-time distribution mirrors the data's rating distribution: the
+investment-grade buckets (BBB, A, BB) accumulate the most obligor-years,
+while AAA and CCC/C are sparsely populated, which mechanically inflates the
+variance of those rows of $\Lambda$. The total $\sum_i Y_i \approx 9{,}993$
+obligor-years almost exactly equals 10,000 obligors $\times$ 1 year of
+window; the small shortfall reflects the unequal calendar lengths of
+individual months.
+
+## Generator Matrix $\Lambda$
+
+```{r task1-Lambda}
+# Off-diagonal entries: lambda_{ij} = N_{ij} / Y_i (sweep divides row i by Y_i).
 Lambda <- sweep(N, MARGIN = 1, STATS = Y, FUN = "/")
 
+# Stays are not transitions: wipe the diagonal, then set it to the negative
+# row-sum so each row of Lambda sums to zero.
 diag(Lambda) <- 0
-
 diag(Lambda) <- -rowSums(Lambda)
-
-rowSums(Lambda)
-all(abs(rowSums(Lambda)) < 1e-10)
-
-all(Lambda[row(Lambda) != col(Lambda)] >= 0)
-
-all(diag(Lambda) <= 0)
-
-Lambda["D",]
-
 ```
 
-```{r, include=TRUE}
+```{r task1-Lambda-table, echo=FALSE}
+kable(
+    round(Lambda, 4),
+    booktabs = TRUE,
+    caption  = "Estimated generator $\\Lambda$ (annualised transition intensities)."
+) |> kable_styling(latex_options = c("hold_position", "scale_down"))
+```
 
+Off-diagonal entries are instantaneous transition intensities, while the
+diagonal equals the negative row-sum so mass is conserved. Row sums are zero
+to machine precision (largest absolute deviation
+`r format(max(abs(rowSums(Lambda))), scientific = TRUE, digits = 2)`).
+Intensities grow sharply as we move down the rating ladder: the magnitude
+of the CCC/C diagonal is roughly an order of magnitude larger than the AAA
+diagonal, meaning CCC/C-rated obligors leave their bucket much faster than
+high-grade names --- which, after exponentiation, will translate into PDs
+differing by several orders of magnitude.
+
+## Matrix Exponential --- One-Year Migration Matrix
+
+We implement the truncated Taylor expansion of $e^{\Lambda}$ with the
+standard recursion $\mathrm{term}_k = \mathrm{term}_{k-1} \cdot \Lambda / k$,
+which avoids any explicit factorial and uses one matrix multiplication per
+iteration:
+
+```{r task1-expm}
 expm_taylor <- function(M, k_max) {
-
-    K <- nrow(M)
-    P <- diag(K)
-    term <- diag(K)
-    for (k in 1:k_max) {
+    K    <- nrow(M)
+    P    <- diag(K)            # k = 0 term (identity)
+    term <- diag(K)            # running term  M^k / k!
+    for (k in seq_len(k_max)) {
         term <- (term %*% M) / k
-        P <- P + term
+        P    <- P + term
     }
     dimnames(P) <- dimnames(M)
     P
 }
 
-P5 <-  expm_taylor(Lambda, k_max = 5)
-P20 <- expm_taylor(Lambda, k_max = 20)
+P5  <- expm_taylor(Lambda, k_max = 5)   # case-study minimum
+P20 <- expm_taylor(Lambda, k_max = 20)  # essentially exact
 
-
-rowSums(P5)
-rowSums(P20)
-max(abs(rowSums(P20) - 1))
-
-range(P5)
-range(P20)
-
-P20["D",]
-
-max(abs(P5 - P20))
-
-PD_raw <- P20[, "D"]
-
-PD <- pmax(PD_raw, 0.0005) # set a floor for PD to avoid zero probabilities
-data.frame(rating = names(PD), PD_raw, PD)
-
+trunc_error  <- max(abs(P5 - P20))
+expm_compare <- max(abs(P20 - expm::expm(Lambda)))
 ```
 
-```{r, include=TRUE}
+```{r task1-P5-table, echo=FALSE}
+kable(
+    round(P5 * 100, 3),
+    booktabs = TRUE,
+    caption  = "One-year migration matrix $P^{(5)}$ from the 5-term Taylor expansion (\\%)."
+) |> kable_styling(latex_options = c("hold_position", "scale_down"))
+```
 
-round(P20, 6)
+```{r task1-P20-table, echo=FALSE}
+kable(
+    round(P20 * 100, 3),
+    booktabs = TRUE,
+    caption  = "One-year migration matrix $P^{(20)}$ from the 20-term Taylor expansion (\\%)."
+) |> kable_styling(latex_options = c("hold_position", "scale_down"))
+```
 
-pacman::p_load(expm)
-P_expm <- expm::expm(Lambda)
-max(abs(P_expm - P20))
+The case-study requires at least five terms of the series (slide p.132); we
+additionally compute the 20-term expansion as a benchmark. The maximum
+absolute element-wise difference between $P^{(5)}$ and $P^{(20)}$ is
+`r format(trunc_error, scientific = TRUE, digits = 2)`, i.e. the 5-term
+truncation is already accurate to about two parts in $10^5$ on every cell.
+For external validation, $P^{(20)}$ agrees with `expm::expm(Lambda)` to
+`r format(expm_compare, scientific = TRUE, digits = 2)`, which is machine
+precision. The diagonal entries of $P^{(20)}$ give the one-year *persistence*
+probability for each rating, falling from $\sim$91.6% for AAA to $\sim$61.9%
+for CCC/C, and the last row equals $(0, \dots, 0, 1)$ exactly, confirming
+that default remains absorbing under the exponential map.
 
+## One-Year PD Vector (with 5 bp Floor)
+
+```{r task1-PD}
 PD_raw <- P20[, "D"]
-PD <- pmax(PD_raw, 0.0005) # set a floor for
+PD     <- pmax(PD_raw, 0.0005)   # 5 basis-point regulatory floor
+```
 
-data.frame(
-    rating = names(PD),
-    PD_raw = round(PD_raw, 6),
-    PD = round(PD, 6),
-    floored = PD_raw < 0.0005
+```{r task1-PD-table, echo=FALSE}
+PD_tbl <- data.table(
+    Rating  = names(PD),
+    PD_raw  = round(PD_raw, 6),
+    PD      = round(PD,     6),
+    Floored = PD_raw < 0.0005
 )
-
-
-
-
-
+kable(
+    PD_tbl,
+    booktabs = TRUE,
+    caption  = "One-year probabilities of default by rating, before and after the 5 bp regulatory floor."
+) |> kable_styling(latex_options = c("hold_position"))
 ```
 
+The raw AAA and AA PDs (approximately
+`r format(PD_raw["AAA"], digits = 2, scientific = TRUE)` and
+`r format(PD_raw["AA"], digits = 2, scientific = TRUE)`)
+lie below the 5 basis-point floor required by the regulator (CRR
+Art. 160(1)). This is a well-known feature of investment-grade migration
+data: the highest-quality buckets simply do not generate enough defaults in
+a finite sample for the empirical estimator to be reliable. The floor is the
+supervisor's way of acknowledging that even AAA names carry strictly
+positive default risk. From A downward the empirical PD dominates the
+floor by at least three orders of magnitude, with CCC/C reaching $\sim$28%.
+The full ordering $\text{PD}_{\text{AAA}} < \text{PD}_{\text{AA}} < \cdots <
+\text{PD}_{\text{CCC/C}}$ is preserved, which is necessary for the
+downstream regulatory and simulation models to behave sensibly.
 
+## Summary --- Inputs for Downstream Tasks
 
-# **Task**
+The three objects carried forward into Tasks 3, 4 and 5 are:
 
-## 
-Determine the credit risk for the portfolio of 100 borrowers based on the Basel
-Standardized Approach. Proceed by using the existing ratings as if they were external ratings.
+- **`PD`** --- 8-vector of one-year PDs by rating, after the 5 bp floor.
+  Primary input to the IRB closed-form formula (Task 3) and to both
+  Merton-style simulations (Tasks 4 and 5).
+- **`P20`** --- 8 $\times$ 8 one-year migration matrix. Useful if a
+  downstream task needs the full migration probabilities rather than just
+  the default column.
+- **`Lambda`** --- the underlying generator. Useful for computing
+  migration probabilities at any horizon $\Delta t$ via
+  $P(\Delta t) = e^{\Lambda \Delta t}$.
 
-```{r, include=TRUE}
-str(portfolio)
-portfolio[, .N, by = Rating][order(-N)]
+# Task 2 --- Basel Standardized Approach
 
-sum(portfolio$Loan.Volume)
-range(portfolio$Loan.Volume)
-portfolio[, .N, by = Industry]
+*Author: Farkas Tallos*
 
+## Case-Study Task
+
+Determine the credit risk for the portfolio of 100 borrowers based on the
+Basel Standardized Approach. Proceed by using the existing ratings as if
+they were external ratings.
+
+## Regulatory Risk-Weight Lookup (CRR Art. 122)
+
+Under the Standardized Approach the risk weight applied to a corporate
+exposure is a step function of the external credit assessment (CRR
+Article 122; slide p.208 of
+`docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf`). Following the case-study
+instruction, we treat the internal ratings as if they were ECAI ratings.
+The mapping from the eight-bucket rating universe to risk weights, with
+defaulted exposures attracting the 150% weight applicable when specific
+provisions cover less than 20% of the outstanding amount, is:
+
+```{r task2-rw-table}
 rw_table <- data.table(
-    Rating = c("AAA", "AA", "A", "BBB", "BB", "B", "CCC/C", "D"),
-    RW = c(0.20, 0.20, 0.50, 1.00, 1.00, 1.50, 1.50, 1.50)
+    Rating = c("AAA", "AA",  "A",  "BBB", "BB",  "B",  "CCC/C", "D"),
+    RW     = c(0.20,  0.20,  0.50, 1.00,  1.00,  1.50, 1.50,    1.50)
 )
-
-port_sa <- merge(portfolio, rw_table, by = "Rating", all.x = TRUE)
-
-port_sa[, RWA := Loan.Volume * RW]
-
-head(port_sa)
-
-total_EAD <- sum(port_sa$Loan.Volume)
-total_RWA <- sum(port_sa$RWA)
-capital_req_SA <- 0.08 * total_RWA
-
-port_sa[, .(
-    N = .N,
-    EAD = sum(Loan.Volume),
-    RW = unique(RW),
-    RWA = sum(RWA),
-    Capital = 0.08 * sum(RWA)
-), by = Rating][order(Rating)]
-
-
-sum(!is.na(port_sa$RW))
-
-total_RWA / total_EAD
-
-capital_req_SA / total_EAD
-
 ```
+
+```{r task2-rw-table-render, echo=FALSE}
+kable(
+    rw_table,
+    col.names = c("Rating", "Risk Weight"),
+    booktabs  = TRUE,
+    caption   = "CRR Art. 122 risk weights for corporate exposures."
+) |> kable_styling(latex_options = c("hold_position"))
+```
+
+## Per-Obligor Risk-Weighted Assets
+
+```{r task2-rwa}
+port_sa <- merge(portfolio, rw_table, by = "Rating", all.x = TRUE)
+port_sa[, RWA     := Loan.Volume * RW]
+port_sa[, Capital := 0.08 * RWA]
+setorder(port_sa, -RWA)
+```
+
+```{r task2-top10, echo=FALSE}
+kable(
+    head(port_sa[, .(Obligor, Rating, Industry, Loan.Volume, RW, RWA, Capital)], 10),
+    booktabs    = TRUE,
+    caption     = "Ten largest obligors by RWA under the Standardized Approach.",
+    format.args = list(big.mark = ",")
+) |> kable_styling(latex_options = c("hold_position"))
+```
+
+## Aggregated Breakdown by Rating Bucket
+
+```{r task2-by-rating}
+by_rating <- port_sa[, .(
+    N       = .N,
+    EAD     = sum(Loan.Volume),
+    RW      = unique(RW),
+    RWA     = sum(RWA),
+    Capital = sum(Capital)
+), by = Rating]
+
+# Order by the canonical rating order, not alphabetical.
+by_rating[, Rating := factor(Rating, levels = ratings_order)]
+setorder(by_rating, Rating)
+
+# Append totals row.
+totals <- data.table(
+    Rating  = "Total",
+    N       = sum(by_rating$N),
+    EAD     = sum(by_rating$EAD),
+    RW      = sum(by_rating$RWA) / sum(by_rating$EAD),
+    RWA     = sum(by_rating$RWA),
+    Capital = sum(by_rating$Capital)
+)
+by_rating_out <- rbind(
+    by_rating[, .(Rating = as.character(Rating), N, EAD, RW, RWA, Capital)],
+    totals
+)
+```
+
+```{r task2-by-rating-render, echo=FALSE}
+kable(
+    by_rating_out,
+    booktabs    = TRUE,
+    caption     = "Standardized Approach breakdown by rating bucket (EUR, RW in decimal).",
+    format.args = list(big.mark = ","),
+    digits      = c(0, 0, 0, 2, 0, 0)
+) |> kable_styling(latex_options = c("hold_position"))
+```
+
+The portfolio is concentrated in BBB (30 obligors, $\sim$29% of EAD) and
+BB (27 obligors, $\sim$27% of EAD), both of which carry the
+capital-neutral 100% weight. The eight AA and three AAA names absorb 20%
+weights, the seventeen A-rated obligors 50%, while the fifteen
+sub-investment-grade names (B and CCC/C combined) are penalised at 150%.
+No obligors are in default in the current book, so the SA exposure-weighted
+risk weight falls between the 75% (everyone BBB) and 150% (everyone CCC/C)
+extremes that would bracket this rating distribution.
+
+## Headline Capital Numbers
+
+```{r task2-headline}
+total_EAD      <- sum(port_sa$Loan.Volume)
+total_RWA      <- sum(port_sa$RWA)
+capital_req_SA <- 0.08 * total_RWA
+avg_rw         <- total_RWA / total_EAD
+eff_cap_ratio  <- capital_req_SA / total_EAD
+```
+
+Total exposure at default is
+EUR `r format(total_EAD, big.mark = ",")`,
+total RWA is
+EUR `r format(total_RWA, big.mark = ",")`,
+and the minimum capital requirement (8% of RWA) is
+EUR `r format(capital_req_SA, big.mark = ",")`.
+The exposure-weighted average risk weight is
+`r scales::percent(avg_rw, accuracy = 0.01)`,
+and the effective capital-to-EAD ratio is
+`r scales::percent(eff_cap_ratio, accuracy = 0.01)`.
+
+## Interpretation and Limitations
+
+The Standardized Approach delivers a minimum capital figure of roughly
+EUR 1.17 m, or 7.05% of total exposure. That number is
+mechanically driven by the rating distribution and a coarse step-function
+of risk weights; it ignores three economically important features of the
+portfolio. *First*, it makes no use of the empirical PDs we just estimated
+in Task 1: a BBB and a BB obligor receive identical 100% weights despite
+their Lando--Skodeberg PDs differing by a factor of more than three.
+*Second*, it does not account for concentration risk; the largest single
+exposure attracts exactly the same per-euro weight as the smallest.
+*Third*, it implicitly assumes independence --- there is no correlation
+parameter and therefore no notion of tail or unexpected loss. Tasks 3
+(IRB), 4 (2-factor Merton with a common market factor) and 5 (2-factor
+Merton with industry factors) progressively relax these assumptions, and
+the resulting capital figures are compared in Section \ref{sec:comp}.
+
+# Task 3 --- Basel IRB Approach
+
+*Author: Balazs Limpek*
+
+## Case-Study Task
+
+Determine the credit risk for the portfolio of 100 borrowers based on the
+Basel IRB Approach based on the regulatory corporate formula. Use the PDs
+from Task 1 (with the 5 bp floor), set the LGDs to 55%, and set the
+maturity to 2.5 years.
+
+## Implementation
+
+```{r task3-impl, eval=FALSE}
+# IRB corporate formula --- slide p.218 of
+# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf, CRR Art. 153.
+#
+# Inputs from the case study brief:
+#   PD     <- floored PD vector from Task 1 (object `PD`, minimum 5 bp)
+#   LGD    <- 0.55
+#   M      <- 2.5
+#
+# Regulatory correlation as a function of PD:
+#   R(PD) = 0.12 * (1 - exp(-50*PD)) / (1 - exp(-50)) +
+#           0.24 * (1 - (1 - exp(-50*PD)) / (1 - exp(-50)))
+#
+# Maturity adjustment:
+#   b(PD) = (0.11852 - 0.05478 * log(PD))^2
+#
+# Per-obligor capital requirement:
+#   K = LGD * ( pnorm( (qnorm(PD) + sqrt(R) * qnorm(0.999)) /
+#                      sqrt(1 - R) ) - PD ) *
+#       (1 + (M - 2.5) * b) / (1 - 1.5 * b)
+#
+# Risk weight (note the 1.06 scaling factor on slide p.218 --- Basel II
+# convention carried through this course):
+#   RW  = 1.06 * 12.5 * K
+#
+# Aggregation:
+#   RWA_i     = RW_i * EAD_i
+#   Capital_i = K_i  * EAD_i      ( = 8% * RWA_i )
+
+# TODO (Balazs):
+# - Join PDs onto portfolio by Rating.
+# - Compute R, b, K per obligor (vectorised --- single line each).
+# - Aggregate RWA and capital across the portfolio.
+# - Report headline numbers in the same format as Section 2.5 above.
+```
+
+## Results
+
+*To be completed.*
+
+# Task 4 --- 2-Factor Merton with Common Market Factor
+
+*Author: Balazs Limpek*
+
+## Case-Study Task
+
+Determine the credit risk for the portfolio of 100 borrowers based on a
+simulation analysis. The simulation is implemented based on the 2-factor
+Merton model with at least 5,000 scenarios. The change in value of each
+firm depends on a common market factor and an idiosyncratic factor. Use
+the PDs from Task 1 (minimum 5 bp), LGDs of 55%, and weight
+$w = 0.37$. Determine the unexpected loss as the 99.9% VaR minus the
+expected loss.
+
+## Implementation
+
+```{r task4-impl, eval=FALSE}
+# 2-factor Merton with one common market factor --- slide p.223 of
+# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf.
+#
+# Inputs from the case study brief:
+#   PD       <- floored PD vector from Task 1 (object `PD`)
+#   LGD      <- 0.55
+#   w        <- 0.37
+#   n_sim    <- 5000 minimum; 100,000 recommended for a stable 99.9% quantile
+#
+# Algorithm per scenario:
+#   1. DD_i  = -qnorm(PD_i)
+#   2. Draw common market factor   M     ~ N(0, 1)
+#   3. Draw idiosyncratic factors  eps_i ~ N(0, 1)   (independent across i)
+#   4. Asset value:  V_i = w * M + sqrt(1 - w^2) * eps_i
+#   5. Default if V_i < -DD_i          (equivalently V_i < qnorm(PD_i))
+#   6. Scenario loss = sum_i ( 1{default_i} * LGD * EAD_i )
+#
+# Report:
+#   EL  = mean(loss)
+#   VaR = quantile(loss, 0.999)
+#   UL  = VaR - EL                     <-- the case-study deliverable
+#
+# Use set.seed(...) for reproducibility; agree on a seed with Caterina so
+# that Task 4 and Task 5 simulations are directly comparable.
+
+# TODO (Balazs):
+# - Build (PD, EAD) vectors of length 100 by joining PDs onto portfolio.
+# - Vectorise step 4 with a single matrix of standard normals (100 x n_sim).
+# - Produce a loss-distribution histogram and report EL / VaR / UL.
+```
+
+## Results
+
+*To be completed.*
+
+# Task 5 --- 2-Factor Merton with Industry Factors
+
+*Author: Caterina Piacentini*
+
+## Case-Study Task
+
+Determine the credit risk for the portfolio of 100 borrowers based on a
+simulation analysis with the 2-factor Merton model and at least 5,000
+scenarios. The change in value of each firm depends on an industry factor
+and an idiosyncratic factor: firms in the same industry exhibit
+dependence, firms in different industries do not. There are three market
+factors, but only one of them is relevant for each firm. Use the PDs from
+Task 1 (minimum 5 bp), LGDs of 55%, and weight $w = 0.46$. Determine
+the unexpected loss as the 99.9% VaR minus the expected loss.
+
+## Implementation
+
+```{r task5-impl, eval=FALSE}
+# 2-factor Merton with three industry factors --- slide p.224 of
+# docs/01_Slides_QFin_AT in Banking_V1_Handout.pdf, case-study Task 5.
+#
+# Inputs from the case study brief:
+#   PD       <- floored PD vector from Task 1 (object `PD`)
+#   LGD      <- 0.55
+#   w        <- 0.46
+#   n_sim    <- 5000 minimum
+#   Industry <- portfolio$Industry   (integer 1, 2, or 3)
+#
+# Algorithm per scenario:
+#   1. DD_i  = -qnorm(PD_i)
+#   2. Draw three INDEPENDENT industry factors  F_1, F_2, F_3 ~ N(0, 1)
+#   3. Draw idiosyncratic factors                eps_i           ~ N(0, 1)
+#   4. Asset value:  V_i = w * F_{Industry_i} + sqrt(1 - w^2) * eps_i
+#      (each firm loads on exactly ONE industry factor; firms in different
+#       industries are conditionally independent)
+#   5. Default if V_i < qnorm(PD_i)
+#   6. Scenario loss = sum_i ( 1{default_i} * LGD * EAD_i )
+#
+# Report:
+#   EL  = mean(loss)
+#   VaR = quantile(loss, 0.999)
+#   UL  = VaR - EL
+#
+# The 3-industry specification breaks the single common factor of Task 4
+# into three uncorrelated drivers. With portfolio diversification across
+# industries (42 / 29 / 29 obligors), the UL is expected to be lower than
+# Task 4's at the same total weight, even though w is slightly larger
+# (0.46 vs 0.37), because the diversification effect dominates.
+
+# TODO (Caterina):
+# - Reuse the structure of Task 4 but draw a (3 x n_sim) factor matrix and
+#   index into it using portfolio$Industry.
+# - Use the same seed as Task 4 for paired comparison.
+```
+
+## Results
+
+*To be completed.*
+
+# Comparison and Conclusions {#sec:comp}
+
+*Author: Caterina Piacentini*
+
+## Capital Requirements Across Methods
+
+```{r comparison, eval=FALSE}
+# TODO (Caterina): build a single comparison table:
+#
+#   Method                       Capital (EUR)   % of EAD   Notes
+#   --------------------------------------------------------------------------
+#   Standardized Approach          1,169,104       7.05%    No PD / no corr
+#   IRB (regulatory formula)             ...          ...   Single-factor closed form
+#   2-factor Merton (market)             ...          ...   w = 0.37, sim
+#   2-factor Merton (industry)           ...          ...   w = 0.46, 3 industries
+```
+
+## Discussion
+
+*Placeholder for the cross-method discussion required by the deliverable:*
+
+- *Why the four methods produce different capital numbers (rating-only step
+  function vs. continuous PD-dependent regulatory formula vs. simulated tail
+  vs. simulated tail with diversification).*
+- *Advantages and disadvantages of each method (data requirements,
+  computational cost, assumptions, regulatory acceptance).*
+- *Which method should BAWAG prefer and why, given a concentrated mid-grade
+  corporate book.*
+
+## Limitations and Caveats
+
+- *Single-period horizon and time-homogeneity of the Markov chain.*
+- *Constant LGD assumption (55%) ignores downturn-LGD effects.*
+- *Sample size for the migration counts (10,000 obligors over 12 months)
+  is moderate; CCC/C estimates are noisier than the rest.*
+- *Simulation results depend on the random seed and on the number of
+  scenarios; report Monte Carlo standard errors for the 99.9% quantile.*
