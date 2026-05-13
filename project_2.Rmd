@@ -1,0 +1,128 @@
+---
+title: |
+    | Credit Risk Measurement
+    | Advanced Topics in Banking - Project 2
+    | Group 4 | WU Wien, SS 2026
+author: "Caterina Piacentini · Farkas Tallos · Balazs Limpek"
+date : "2026-05-24"
+output:
+    pdf_document:
+        toc: true
+        toc_depth: 3
+        number_sections: true
+        latex_engine: xelatex
+        fig_caption: true
+        keep_tex: true
+        df_print: kable
+        extra_dependencies: ["booktabs", "longtable", "float", "wrapfig", "threeparttable", "threeparttablex", "adjustbox", "array", "multirow", "tikz", "amsmath"]
+geometry: "left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm"
+fontsize: 11pt
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \floatplacement{figure}{H}
+  - \floatplacement{table}{H}
+  - \usepackage{xcolor}
+  - \definecolor{bawagblue}{HTML}{005493}
+  - \definecolor{darkgreen}{HTML}{006400}
+  - \definecolor{darkorange}{HTML}{FF8C00}
+  - \definecolor{darkred}{HTML}{8B0000}
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhf{}
+  - \fancyhead[L]{\small BAWAG Group AG --- Risk Analysis 2025}
+  - \fancyhead[R]{\small Group 4 | WU Wien 2026}
+  - \fancyfoot[C]{\thepage}
+  - \renewcommand{\headrulewidth}{0.4pt}
+  - \usepackage{caption}
+  - \captionsetup[table]{skip=4pt}
+  - \AtBeginDocument{\hypersetup{colorlinks=true, linkcolor=bawagblue, urlcolor=bawagblue, citecolor=bawagblue}}
+---
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(
+    echo = TRUE, 
+    warning = FALSE,
+    message = FALSE,
+    fig.width = 7,
+    fig.height = 5,
+    fig.pos = "H",
+    out.width = "100%"
+)
+
+if(!require("pacman")) install.packages("pacman")
+
+pacman::p_load(
+    data.table,
+    tidyverse,
+    knitr,
+    kableExtra,
+    ggplot2,
+    openxlsx,
+    dplyr
+)
+
+BASE <- "/Users/farkastallos/Library/CloudStorage/OneDrive-WUWien/00_WU/01_2_YEAR/03_Q3/02_ATB/atb_project_2/"
+
+
+ratings <- read.xlsx(paste0(BASE, "Data_Group_4.xlsx"), sheet = "Ratings")
+portfolio <- read.xlsx(paste0(BASE, "Data_Group_4.xlsx"), sheet = "Portfolio")
+
+
+lapply(list(ratings, portfolio), setDT)
+lapply(list(ratings, portfolio), str)
+lapply(list(ratings, portfolio), head)
+lapply(list(ratings, portfolio), summary)
+
+nrow(ratings)
+nrow(portfolio)
+print(colnames(ratings))
+print(colnames(portfolio))
+
+# Correctly parse the dots and format to dashes
+colnames(ratings)[-1] <- format(as.Date(colnames(ratings)[-1], format = "%Y.%m.%d"), "%Y-%m-%d")
+print(colnames(ratings))
+
+```
+
+# **Task**
+
+
+##
+Based on the rating history of 10,000 representative borrowers, determine the one-year
+migration matrix based on the Lando and Skodeberg procedure. In doing so, determine the 
+migration matrix using the generator matrix based on at least the first five terms.
+
+Estimation of the generator matrix come from this formula: 
+$$\lambda_{ij} = \frac{N_{ij}}{\int Y_{j}(s)ds} i \neq j \qquad \text{and} \qquad \lambda_{ii} = -\sum_{j \neq i} \lambda_{ij}$$
+
+where $N_{ij}$ is the number of observed migrations from rating $i$ to rating $j$ and $Y_{j}(s)$ is the number of borrowers in rating $j$ at time $s$. And the integral: $\int Y_{j}(s)ds$ is the total time spent by all borrowers in rating $j$ during the observation period.
+The one-year migration matrix can then be obtained by exponentiating the generator matrix: $W(\Delta t) = e^{\Lambda \cdot \Delta t} = \sum_{k=0}^{\infty} \frac{(\Lambda \cdot \Delta t)^k}{k!}$
+
+```{r, include=TRUE}
+
+generator_matrix <- matrix(0, nrow = nrow(ratings) - 1, ncol = nrow(ratings) - 1)
+
+
+
+
+
+
+```
+
+
+# **Task**
+
+## 
+Determine the credit risk for the portfolio of 100 borrowers based on the Basel
+Standardized Approach. Proceed by using the existing ratings as if they were external ratings.
+
+```{r, include=TRUE}
+
+
+
+
+
+
+```
